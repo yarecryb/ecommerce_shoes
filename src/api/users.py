@@ -19,11 +19,15 @@ class User(BaseModel):
     password: str
 
 
+class LoginCredentials(BaseModel):
+    username: str
+    password: str
+
+
 @router.post("/create_users")
 def create_user(new_users: list[User]):
     """Create new users only if their usernames don't already exist."""
 
-    print(new_users)
     with db.engine.begin() as connection:
         for user in new_users:
             # Check if the username already exists
@@ -48,28 +52,27 @@ def create_user(new_users: list[User]):
             )
     return "User(s) created!"
 
+@router.post("/login")
+def login_user(credentials: LoginCredentials):
+    """Authenticate users by checking their username and password."""
+    username = credentials.username
+    password = credentials.password
 
-# class LoginCredentials(BaseModel):
-#     username: str
-#     password: str
+    with db.engine.begin() as connection:
+        # Execute SQL to get the password associated with the username
+        result = connection.execute(
+            sqlalchemy.text("SELECT password FROM users WHERE username = :username"),
+            {'username': username}
+        ).fetchone()
+        # Check if result is not None and passwords match
+        if result and result[0] == password:
+            auth_token = connection.execute(
+            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+            {'username': username}
+        ).fetchone()
+            print(auth_token[0])
+            return {"message": "Login successful!","Authentication Token": auth_token[0]}
+        else:
+            return {"message": "Invalid username or password."}
 
-# @router.post("/users/login")
-# def login_user(credentials: LoginCredentials):
-#     """Authenticate users by checking their username and password."""
-#     username = credentials.username
-#     password = credentials.password
-
-#     with db.engine.begin() as connection:
-#         # Execute SQL to get the password associated with the username
-#         result = connection.execute(
-#             text("SELECT password FROM users WHERE username = :username"),
-#             {'username': username}
-#         ).fetchone()
-#         # Check if result is not None and passwords match
-#         if result and result[0] == password:
-#             return {"message": "Login successful!"}
-#         else:
-#             # If no result or passwords do not match, return error
-#             raise HTTPException(status_code=401, detail="Invalid username or password.")
-
-# # Example usage of router would be to include it in your FastAPI application setup
+# Example usage of router would be to include it in your FastAPI application setup
