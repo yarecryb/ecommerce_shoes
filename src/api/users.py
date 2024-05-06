@@ -51,11 +51,6 @@ def create_user(new_users: list[User]):
             )
         return "User(s) created!"
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from sqlalchemy import text
-
-router = APIRouter()
 
 class LoginCredentials(BaseModel):
     username: str
