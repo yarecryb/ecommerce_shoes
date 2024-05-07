@@ -8,26 +8,22 @@ The API calls are made in this sequence when making a purchase:
 3. `Add Item to Cart` (Can be called multiple times)
 4. `Checkout Cart`
 
-### 1.1. Get Listings - `/listings` (GET)
+### 1.1. Get All Listings - `/listings` (GET)
 
 Retrieves the list of available shoe listings based on optional filters like size, brand, and price.
-
-**Query Parameters**:
-- `size` (optional): Shoe size to filter by.
-- `brand` (optional): Brand name to filter by.
-- `max_price` (optional): Maximum price to filter by.
 
 **Response**:
 
 ```json
 [
     {
-        "listing_id": "integer",
+        "id": "integer",
+        "username": "string",
         "title": "string",
-        "brand": "string",
+        "brand": "string",     
         "size": "integer",
-        "price": "integer",
-        "images": ["string"]
+        "price": "float",
+        "created_at": "string" # technically a time_stampt
     }
 ]
 ```
