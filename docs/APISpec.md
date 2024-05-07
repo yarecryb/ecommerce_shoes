@@ -86,8 +86,8 @@ Processes the checkout of the cart, including payment handling and order confirm
 The API calls are made in this sequence when signing up:
 1. `Create Account`
 2. `Auth Login`
-3. 'Update Username'
-4. 'Update Password'
+3. `Update Username`
+4. `Update Password`
 
 ### 2.1. Create Account - `/users/create_user` (POST)
 
