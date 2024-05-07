@@ -84,23 +84,32 @@ Processes the checkout of the cart, including payment handling and order confirm
 ## 2. User Login and Signup
 
 The API calls are made in this sequence when signing up:
-1. `Users`
+1. `Create Account`
 2. `Auth Login`
+3. 'Update Username'
+4. 'Update Password'
 
-### 2.1. Get Listings - `/users` (POST)
+### 2.1. Create Account - `/users/create_user` (POST)
 
 Sends user data needed to create an account.
 
 **Query Parameters**:
-- `username`: Username used for login.
-- `email`: Email used for login.
-- `password`: Used for login.
+```json
+[
+    {
+        "full_name": "string",
+        "username": "string",
+        "email": "string",
+        "password": "string"
+    }
+]
+```
 
 **Response**:
 
 ```json
 [
-    "Account created"
+    "User(s) created!"
 ]
 ```
 
