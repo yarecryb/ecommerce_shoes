@@ -7,7 +7,7 @@ from src import database as db
 router = APIRouter()
 
 
-@router.get("/catalog/", tags=["catalog"])
+@router.get("/listings/", tags=["listings"])
 def get_catalog(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1)):
     with db.engine.connect() as connection:
         # Define the specific column order in the SELECT statement
