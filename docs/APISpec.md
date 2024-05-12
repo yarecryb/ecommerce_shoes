@@ -8,26 +8,22 @@ The API calls are made in this sequence when making a purchase:
 3. `Add Item to Cart` (Can be called multiple times)
 4. `Checkout Cart`
 
-### 1.1. Get Listings - `/listings` (GET)
+### 1.1. Get All Listings - `/listings` (GET)
 
 Retrieves the list of available shoe listings based on optional filters like size, brand, and price.
-
-**Query Parameters**:
-- `size` (optional): Shoe size to filter by.
-- `brand` (optional): Brand name to filter by.
-- `max_price` (optional): Maximum price to filter by.
 
 **Response**:
 
 ```json
 [
     {
-        "listing_id": "integer",
+        "id": "integer",
+        "username": "string",
         "title": "string",
-        "brand": "string",
+        "brand": "string",     
         "size": "integer",
-        "price": "integer",
-        "images": ["string"]
+        "price": "float",
+        "created_at": "string" # technically a time_stampt
     }
 ]
 ```
@@ -88,23 +84,32 @@ Processes the checkout of the cart, including payment handling and order confirm
 ## 2. User Login and Signup
 
 The API calls are made in this sequence when signing up:
-1. `Users`
+1. `Create Account`
 2. `Auth Login`
+3. `Update Username`
+4. `Update Password`
 
-### 2.1. Get Listings - `/users` (POST)
+### 2.1. Create Account - `/users/create_user` (POST)
 
 Sends user data needed to create an account.
 
 **Query Parameters**:
-- `username`: Username used for login.
-- `email`: Email used for login.
-- `password`: Used for login.
+```json
+[
+    {
+        "full_name": "string",
+        "username": "string",
+        "email": "string",
+        "password": "string"
+    }
+]
+```
 
 **Response**:
 
 ```json
 [
-    "Account created"
+    "User(s) created!"
 ]
 ```
 
