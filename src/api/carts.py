@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from src.api import auth
 from enum import Enum
+import sqlalchemy
+from src import database as db
 
 router = APIRouter(
     prefix="/carts",
-    tags=["cart"],
+    tags=["carts"],
     dependencies=[Depends(auth.get_api_key)],
 )
 
@@ -68,42 +70,134 @@ def search_orders(
 
 
 class Customer(BaseModel):
-    customer_name: str
-    character_class: str
-    level: int
-
-@router.post("/visits/{visit_id}")
-def post_visits(visit_id: int, customers: list[Customer]):
-    """
-    Which customers visited the shop today?
-    """
-    print(customers)
-
-    return "OK"
+    username: str
+    auth_token: str
 
 
 @router.post("/")
 def create_cart(new_cart: Customer):
-    """ """
-    return {"cart_id": 1}
+    """ Create a new cart for a user if authentication succeeds. """
+    with db.engine.begin() as connection:
+        # Get the authentication token from the users table
+        auth_token = connection.execute(
+            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+            {'username': new_cart.username}
+        ).fetchone()
+        
+        # Compare the fetched token with the provided one in the request
+        if str(auth_token[0]) == new_cart.auth_token:
+            # Insert a new cart entry into the carts table
+            cart_result = connection.execute(
+                sqlalchemy.text(
+                    "INSERT INTO carts (username, bought) VALUES (:username, :bought) RETURNING cart_id"
+                ),
+                {
+                    'username': new_cart.username,
+                    'bought': False  # Use Python's boolean False instead of string "False"
+                }
+            ).fetchone()  # Fetch the result of the query which includes the cart_id
+
+            # Print the cart_id from the result
+            return {"Cart ID": str(cart_result[0])}
+        else:
+            return {"message": "Invalid username or auth token!"}
+
 
 
 class CartItem(BaseModel):
-    quantity: int
+    username: str
+    auth_token: str
+    catalog_id: int
 
-
-@router.post("/{cart_id}/items/{item_sku}")
-def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
+@router.post("/{cart_id}/add_item")
+def set_cart_item(cart_id: int, cart_item: CartItem):
     """ """
+    with db.engine.begin() as connection:
+        # Get the authentication token from the users table
+        auth_token = connection.execute(
+            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+            {'username': cart_item.username}
+        ).fetchone()
+        
+        # Compare the fetched token with the provided one in the request
+        if str(auth_token[0]) == cart_item.auth_token:
+            # Insert a new cart entry into the carts table
+            title = connection.execute(
+            sqlalchemy.text("SELECT title FROM catalog WHERE id = :id"),
+            {'id': cart_item.catalog_id}
+        ).fetchone()
+            price = connection.execute(
+            sqlalchemy.text("SELECT price FROM catalog WHERE id = :id"),
+            {'id': cart_item.catalog_id}
+        ).fetchone()
+            
+            usersUpdate = sqlalchemy.text(
+                "UPDATE carts SET title = :title, price = :price, catalog_id = :catalog_id WHERE cart_id = :cart_id"
+            )
+            # Execute the update
+            connection.execute(usersUpdate, {
+                'title': str(title[0]),
+                'price': float(price[0]),
+                'cart_id': cart_id,
+                'catalog_id': cart_item.catalog_id
+            })
+            return "OK"
+        else:
+            return {"message": "Invalid username or auth token!"}
 
-    return "OK"
-
-
-class CartCheckout(BaseModel):
-    payment: str
+class CheckoutCart(BaseModel):
+    username: str
+    auth_token: str
+    cart_id: int
 
 @router.post("/{cart_id}/checkout")
-def checkout(cart_id: int, cart_checkout: CartCheckout):
+def checkout(checkoutCart: CheckoutCart):
     """ """
+    with db.engine.begin() as connection:
+        # Get the authentication token from the users table
+        auth_token = connection.execute(
+            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+            {'username': checkoutCart.username}
+        ).fetchone()
+        cart_username = connection.execute(
+            sqlalchemy.text("SELECT username FROM carts WHERE cart_id = :cart_id"),
+            {'cart_id': checkoutCart.cart_id}
+        ).fetchone()
+        
+        # Compare the fetched token with the provided one in the request
+        if str(auth_token[0]) == checkoutCart.auth_token and str(cart_username[0]) == checkoutCart.username:
+            # Insert a new cart entry into the carts table
+            title = connection.execute(
+            sqlalchemy.text("SELECT title FROM carts WHERE cart_id = :id"),
+            {'id': checkoutCart.cart_id}
+                ).fetchone()
+            price = connection.execute(
+            sqlalchemy.text("SELECT price FROM carts WHERE cart_id = :id"),
+            {'id': checkoutCart.cart_id}
+                ).fetchone()
+            
+            usersUpdate = sqlalchemy.text(
+                "UPDATE carts SET bought = :bought WHERE cart_id = :cart_id")
+                # Execute the update
+            connection.execute(usersUpdate, {
+                    'bought': True,
+                    'cart_id': checkoutCart.cart_id
+                })
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+                #give buyer money:
+            usersUpdate = sqlalchemy.text(
+                "UPDATE carts SET bought = :bought WHERE cart_id = :cart_id")
+                # Execute the update
+            connection.execute(usersUpdate, {
+                    'bought': True,
+                    'cart_id': checkoutCart.cart_id
+                })
+
+                #Give Seller the Money
+            catalogid = connection.execute(
+                        sqlalchemy.text("SELECT catalog_id FROM carts WHERE cart_id = :id"),
+                        {'id': checkoutCart.cart_id}
+                            ).fetchone()
+            print(catalogid)
+            return catalogid
+
