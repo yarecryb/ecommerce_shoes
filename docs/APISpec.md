@@ -190,7 +190,7 @@ Creates a new shopping cart for the customer.
 ```json
 {
     "username": "integer",
-    "auth_token": "string  # Once user has been logged in, a authentication token will be given
+    "auth_token": "string"  # Once user has been logged in, a authentication token will be given
 }
 ```
 
