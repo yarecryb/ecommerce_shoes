@@ -161,14 +161,14 @@ Used for seller to create a seller portfolio once account is crated.
   "username": "string",
   "auth_token": "string",
   "items" : [
-   {
-     "title": "string",
-     "brand": "string",
-     "size": "number",
-     "price": "integer",
-     "quantity": "integer"
-   }
-  ]
+       {
+         "title": "string",
+         "brand": "string",
+         "size": "number",
+         "price": "integer",
+         "quantity": "integer"
+       }
+   ]
 }
 ```
 
