@@ -1,108 +1,20 @@
 # API Specification for CSC Project 
 
-## 1. Customer Purchasing
+The API calls are made in this sequence when using the shop:
+1. `User Login and Signup`
+2. `Customer Purchasing`
+3. `Posting as Seller`
 
-The API calls are made in this sequence when making a purchase:
-1. `Get Listings`
-2. `Create Cart`
-3. `Add Item to Cart` (Can be called multiple times)
-4. `Checkout Cart`
-
-### 1.1. Get All Listings - `/listings` (GET)
-
-Retrieves the list of available shoe listings based on optional filters like size, brand, and price.
-
-**Response**:
-
-```json
-[
-    {
-        "id": "integer",
-        "username": "string",
-        "title": "string",
-        "brand": "string",     
-        "size": "integer",
-        "price": "float",
-        "created_at": "string" # technically a time_stamptz
-    }
-]
-```
-
-### 1.2. Create Cart - `/carts` (POST)
-
-Creates a new shopping cart for the customer.
-
-**Request**:
-
-```json
-{
-    "username": "integer",
-    "auth_token": "string  # Once user has been logged in, a authentication token will be given
-}
-```
-
-**Response**:
-
-```json
-{
-    "Cart ID": "string"
-}
-```
-
-### 1.3. Add Item to Cart - `/carts/{cart_id}/add_item` (POST)
-
-Adds a specific shoe listing to the customer's cart
-
-**Request**:
-
-```json
-{
-    "username": "integer",
-    "auth_token": "string",
-    "catalog_id": "int"
-}
-```
-
-**Response**:
-
-```json
-{
-    "Catalog ID": "string",
-    "Cart ID": "string"
-}
-```
-
-### 1.4. Checkout Cart - `/carts/{cart_id}/checkout` (POST)
-
-Processes the checkout of the cart, including payment handling and order confirmation.
-
-**Request**:
-
-```json
-{
-    "username": "integer",
-    "auth_token": "string",
-    "cart_id": "int"
-}
-```
-
-**Response**:
-
-```json
-{
-    "Catalog ID": "string"
-}
-```
-
-## 2. User Login and Signup
+## 1. User Login and Signup
 
 The API calls are made in this sequence when signing up:
 1. `Create Account`
 2. `Auth Login`
 3. `Update Username`
 4. `Update Password`
+5. `Add Money to Wallet`
 
-### 2.1. Create Account - `/users/create_user` (POST)
+### 1.1. Create Account - `/users/create_user` (POST)
 
 Sends user data needed to create an account.
 
@@ -126,7 +38,7 @@ Sends user data needed to create an account.
 ]
 ```
 
-### 2.2. Get Listings - `/auth/login` (POST)
+### 1.2. Get Listings - `/auth/login` (POST)
 
 Used for user to login once account is crated.
 
@@ -147,7 +59,7 @@ Used for user to login once account is crated.
 }
 ```
 
-### 2.3. Change Username - `/auth/update_username` (POST)
+### 1.3. Change Username - `/auth/update_username` (POST)
 
 Used for user to change their username
 
@@ -169,7 +81,7 @@ Used for user to change their username
 }
 ```
 
-### 2.4. Change Password - `/auth/update_password` (POST)
+### 1.4. Change Password - `/auth/update_password` (POST)
 
 Used for user to change their username
 
@@ -190,6 +102,150 @@ Used for user to change their username
     "Password Changed!",
 }
 ```
+
+### 1.5. Add Money to Wallet - `/wallet/deposit` (POST)
+
+The user can add money to the wallet to buy shoes
+
+**Request**:
+```json
+{
+    "username": "string",
+    "auth_token": "string",
+    "card_number": "string",
+    "expiration_date": "string",
+    "cvs": "integer",
+    "amount": "float"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Deposit successful!"
+}
+```
+
+### 1.6. Withdraw Money from Wallet - `/wallet/withdraw` (POST)
+
+The user can withdraw money from the wallet
+
+**Request**:
+```json
+{
+    "username": "string",
+    "auth_token": "string",
+    "card_number": "string",
+    "expiration_date": "string",
+    "cvs": "integer",
+    "amount": "float"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Withdrawal successful!"
+}
+```
+
+## 2. Customer Purchasing
+
+The API calls are made in this sequence when making a purchase:
+1. `Get Listings`
+2. `Create Cart`
+3. `Add Item to Cart` (Can be called multiple times)
+4. `Checkout Cart`
+
+
+### 2.1. Get All Listings - `/listings` (GET)
+
+Retrieves the list of available shoe listings based on optional filters like size, brand, and price.
+
+**Response**:
+
+```json
+[
+    {
+        "id": "integer",
+        "username": "string",
+        "title": "string",
+        "brand": "string",     
+        "size": "integer",
+        "price": "float",
+        "created_at": "string" # technically a time_stamptz
+    }
+]
+```
+
+### 2.2. Create Cart - `/carts` (POST)
+
+Creates a new shopping cart for the customer.
+
+**Request**:
+
+```json
+{
+    "username": "integer",
+    "auth_token": "string  # Once user has been logged in, a authentication token will be given
+}
+```
+
+**Response**:
+
+```json
+{
+    "Cart ID": "string"
+}
+```
+
+### 2.3. Add Item to Cart - `/carts/{cart_id}/add_item` (POST)
+
+Adds a specific shoe listing to the customer's cart
+
+**Request**:
+
+```json
+{
+    "username": "integer",
+    "auth_token": "string",
+    "catalog_id": "int"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Catalog ID": "string",
+    "Cart ID": "string"
+}
+```
+
+### 2.4. Checkout Cart - `/carts/{cart_id}/checkout` (POST)
+
+Processes the checkout of the cart, including payment handling and order confirmation.
+
+**Request**:
+
+```json
+{
+    "username": "integer",
+    "auth_token": "string",
+    "cart_id": "int"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Catalog ID": "string"
+}
+```
+
 
 ## 3. Posting as Seller
 
@@ -223,46 +279,49 @@ Used for seller to add an item to the catalog
     "List of Catalog Id's:": "list(integers)"
 }
 
-### 3.3. Add Shoes - `/portfolio/add_item` (POST)
-Used for seller to create a seller portfolio once account is crated.
+### 3.2. List Portfolio - `/portfolio/list_items` (POST)
+Used for seller to show what items they have listed
 
 
 ```json
 {
   "username": "string",
   "auth_token": "string",
-  "items" : [
-       {
-         "title": "string",
-         "brand": "string",
-         "size": "number",
-         "price": "integer",
-         "quantity": "integer"
-       }
-   ]
 }
 ```
 
 **Response**:
 
 ```json
-{
-    "Item added"
-}
+[
+    {
+        "id": "integer",
+        "title": "string",
+        "brand": "string",
+        "size": "float",
+        "price": "string"
+    }
+]
 ```
 
-### 3.4. Add Photos - `/portfolio/add_photo` (POST)
-Used for seller to add photos to their post
+### 3.3. Delete Item - `/portfolio/delete_item` (POST)
+Used for seller to remove an item from their listing
 
 **Query Parameters**:
 
-- `photo`: What the link of the photo will be
+```json
+{
+  "username": "string",
+  "auth_token": "string",
+  "items": "List of integers"
+}
+```
 
 **Response**:
 
 ```json
 {
-    "Item added"
+    "Items deleted successfully"
 }
 ```
 
