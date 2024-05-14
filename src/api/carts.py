@@ -73,6 +73,11 @@ class Auth(BaseModel):
     username: str
     auth_token: str
 
+class CartItem(Auth):
+    catalog_id: int
+
+class CheckoutCart(Auth):
+    cart_id: int
 
 @router.post("/")
 def create_cart(data: Auth):
@@ -110,12 +115,6 @@ def create_cart(data: Auth):
             raise HTTPException(status_code=401, detail="Invalid auth")
 
 
-
-class CartItem(BaseModel):
-    username: str
-    auth_token: str
-    catalog_id: int
-
 #TODO : update to one to many, add multiple items to cart
 @router.post("/{cart_id}/add_item")
 def set_cart_item(cart_id: int, cart_item: CartItem):
@@ -144,51 +143,62 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
         else:
             return {"message": "Invalid username or auth token!"}
 
-class CheckoutCart(BaseModel):
-    username: str
-    auth_token: str
-    cart_id: int
-
-@router.post("/{cart_id}/checkout")
-def checkout(checkoutCart: CheckoutCart):
+@router.post("/checkout/")
+def checkout(data: CheckoutCart):
     """ """
     with db.engine.begin() as connection:
-        # Get the authentication token from the users table
-        auth_token = connection.execute(
-            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
-            {'username': checkoutCart.username}
-        ).fetchone()
-        cart_username = connection.execute(
-            sqlalchemy.text("SELECT username FROM carts WHERE cart_id = :cart_id"),
-            {'cart_id': checkoutCart.cart_id}
+        user_info = connection.execute(
+            sqlalchemy.text("""
+                SELECT auth_token, id
+                FROM users WHERE username = :username
+            """),
+            {'username': data.username}
         ).fetchone()
         
-        # Compare the fetched token with the provided one in the request
-        if str(auth_token[0]) == checkoutCart.auth_token and str(cart_username[0]) == checkoutCart.username:
-            # Insert a new cart entry into the carts table
-            title = connection.execute(
-            sqlalchemy.text("SELECT title FROM carts WHERE cart_id = :id"),
-            {'id': checkoutCart.cart_id}
-                ).fetchone()
-            price = connection.execute(
-            sqlalchemy.text("SELECT price FROM carts WHERE cart_id = :id"),
-            {'id': checkoutCart.cart_id}
-                ).fetchone()
+
+        if user_info and str(user_info.auth_token) == data.auth_token:
             
-            usersUpdate = sqlalchemy.text(
-                "UPDATE carts SET bought = :bought WHERE cart_id = :cart_id")
-                # Execute the update
-            connection.execute(usersUpdate, {
+            cart_update = connection.execute(
+                sqlalchemy.text("""
+                    UPDATE carts SET bought = :bought 
+                    WHERE cart_id = :cart_id
+                    RETURNING user_id, catalog_id
+                """), 
+                {
                     'bought': True,
-                    'cart_id': checkoutCart.cart_id
+                    'cart_id': data.cart_id
+                }
+            ).fetchone()
+
+
+            shoe_info = connection.execute(
+                sqlalchemy.text("""
+                    UPDATE catalog SET quantity = quantity - 1
+                    WHERE id = :id
+                    RETURNING *
+                """), 
+                { 'id': cart_update.catalog_id}
+            ).fetchone()
+
+            #Take money from buyer
+            buyer_update = connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users SET wallet = wallet - :price
+                    WHERE id = :id
+                """), 
+                {
+                    'id': user_info.id,
+                    'price': shoe_info.price
                 })
 
-
-                #Give Seller the Money
-            catalogid = connection.execute(
-                        sqlalchemy.text("SELECT catalog_id FROM carts WHERE cart_id = :id"),
-                        {'id': checkoutCart.cart_id}
-                            ).fetchone()
-            print(catalogid)
-            return catalogid
+            seller_update = connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users SET wallet = wallet + :price
+                    WHERE id = :id
+                """), {
+                    'id': shoe_info.user_id,
+                    'price': shoe_info.price
+                })
+            print(shoe_info.user_id)
+            return cart_update.catalog_id
 
