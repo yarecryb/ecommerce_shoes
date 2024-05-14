@@ -39,7 +39,7 @@ Sends user data needed to create an account.
 ]
 ```
 
-### 1.2. Get Listings - `/auth/login` (POST)
+### 1.2. Get Listings - `/users/login` (POST)
 
 Used for user to login once account is crated.
 
@@ -60,7 +60,7 @@ Used for user to login once account is crated.
 }
 ```
 
-### 1.3. Change Username - `/auth/update_username` (POST)
+### 1.3. Change Username - `/users/update_username` (POST)
 
 Used for user to change their username
 
@@ -82,14 +82,14 @@ Used for user to change their username
 }
 ```
 
-### 1.4. Change Password - `/auth/update_password` (POST)
+### 1.4. Change Password - `/users/update_password` (POST)
 
 Used for user to change their username
 
 **Request**:
 ```json
 {
-    "current_username": "string",
+    "username": "string",
     "current_password": "string",
     "new_password": "string",
     "auth_token": "string"
