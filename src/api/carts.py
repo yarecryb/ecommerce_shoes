@@ -79,13 +79,13 @@ def create_cart(new_cart: Customer):
     """ Create a new cart for a user if authentication succeeds. """
     with db.engine.begin() as connection:
         # Get the authentication token from the users table
-        auth_token = connection.execute(
+        user_info = connection.execute(
             sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
             {'username': new_cart.username}
         ).fetchone()
         
         # Compare the fetched token with the provided one in the request
-        if str(auth_token[0]) == new_cart.auth_token:
+        if str(user_info.auth_token) == new_cart.auth_token:
             # Insert a new cart entry into the carts table
             cart_result = connection.execute(
                 sqlalchemy.text(
@@ -184,14 +184,6 @@ def checkout(checkoutCart: CheckoutCart):
                     'cart_id': checkoutCart.cart_id
                 })
 
-                #give buyer money:
-            usersUpdate = sqlalchemy.text(
-                "UPDATE carts SET bought = :bought WHERE cart_id = :cart_id")
-                # Execute the update
-            connection.execute(usersUpdate, {
-                    'bought': True,
-                    'cart_id': checkoutCart.cart_id
-                })
 
                 #Give Seller the Money
             catalogid = connection.execute(
