@@ -10,7 +10,7 @@ router = APIRouter(
     tags=["portfolio"],
     dependencies=[Depends(auth.get_api_key)],
 )
-class UserDetails(BaseModel):
+class Auth(BaseModel):
     username: str
     auth_token: str
 
@@ -25,10 +25,10 @@ class ItemDetail(BaseModel):
 class ItemDetailWithID(ItemDetail):
     id: int
 
-class ItemListing(UserDetails):
+class ItemListing(Auth):
     items: list[ItemDetail]
 
-class ItemIDs(UserDetails):
+class ItemIDs(Auth):
     items: list[int]
 
 
@@ -72,7 +72,7 @@ def add_item(data: ItemListing):
 
 # returns all listings that belong to the user logged in
 @router.post("/list_items")
-def list_items(user: UserDetails):
+def list_items(user: Auth):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""

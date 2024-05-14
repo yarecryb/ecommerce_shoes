@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 from enum import Enum
@@ -69,38 +69,45 @@ def search_orders(
     }
 
 
-class Customer(BaseModel):
+class Auth(BaseModel):
     username: str
     auth_token: str
 
 
 @router.post("/")
-def create_cart(new_cart: Customer):
+def create_cart(data: Auth):
     """ Create a new cart for a user if authentication succeeds. """
     with db.engine.begin() as connection:
         # Get the authentication token from the users table
         user_info = connection.execute(
-            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
-            {'username': new_cart.username}
+            sqlalchemy.text("""
+                SELECT auth_token, id
+                FROM users WHERE username = :username
+            """),
+            {'username': data.username}
         ).fetchone()
-        
-        # Compare the fetched token with the provided one in the request
-        if str(user_info.auth_token) == new_cart.auth_token:
-            # Insert a new cart entry into the carts table
-            cart_result = connection.execute(
-                sqlalchemy.text(
-                    "INSERT INTO carts (username, bought) VALUES (:username, :bought) RETURNING cart_id"
-                ),
-                {
-                    'username': new_cart.username,
-                    'bought': False  # Use Python's boolean False instead of string "False"
-                }
-            ).fetchone()  # Fetch the result of the query which includes the cart_id
+        if user_info and str(user_info.auth_token) == data.auth_token:
+            # Compare the fetched token with the provided one in the request
+            if str(user_info.auth_token) == data.auth_token:
+                # Insert a new cart entry into the carts table
+                cart_result = connection.execute(
+                    sqlalchemy.text("""
+                        INSERT INTO carts (user_id, bought)
+                        VALUES (:user_id, :bought) 
+                        RETURNING cart_id
+                    """),
+                    {
+                        'user_id': user_info.id,
+                        'bought': False  # Use Python's boolean False instead of string "False"
+                    }
+                ).fetchone()  # Fetch the result of the query which includes the cart_id
 
-            # Print the cart_id from the result
-            return {"Cart ID": str(cart_result[0])}
+                # Print the cart_id from the result
+                return {"Cart ID": str(cart_result.cart_id)}
+            else:
+                return {"message": "Invalid username or auth token!"}
         else:
-            return {"message": "Invalid username or auth token!"}
+            raise HTTPException(status_code=401, detail="Invalid auth")
 
 
 
@@ -109,38 +116,30 @@ class CartItem(BaseModel):
     auth_token: str
     catalog_id: int
 
+#TODO : update to one to many, add multiple items to cart
 @router.post("/{cart_id}/add_item")
 def set_cart_item(cart_id: int, cart_item: CartItem):
     """ """
     with db.engine.begin() as connection:
-        # Get the authentication token from the users table
-        auth_token = connection.execute(
-            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+        user_info = connection.execute(
+            sqlalchemy.text("""
+                SELECT auth_token, id
+                FROM users WHERE username = :username
+            """),
             {'username': cart_item.username}
         ).fetchone()
-        
-        # Compare the fetched token with the provided one in the request
-        if str(auth_token[0]) == cart_item.auth_token:
-            # Insert a new cart entry into the carts table
-            title = connection.execute(
-            sqlalchemy.text("SELECT title FROM catalog WHERE id = :id"),
-            {'id': cart_item.catalog_id}
-        ).fetchone()
-            price = connection.execute(
-            sqlalchemy.text("SELECT price FROM catalog WHERE id = :id"),
-            {'id': cart_item.catalog_id}
-        ).fetchone()
-            
-            usersUpdate = sqlalchemy.text(
-                "UPDATE carts SET title = :title, price = :price, catalog_id = :catalog_id WHERE cart_id = :cart_id"
-            )
+
+        if user_info and str(user_info.auth_token) == cart_item.auth_token:
+            itemUpdate = sqlalchemy.text("""
+                UPDATE carts SET catalog_id = :catalog_id
+                WHERE cart_id = :cart_id
+            """)
             # Execute the update
-            connection.execute(usersUpdate, {
-                'title': str(title[0]),
-                'price': float(price[0]),
-                'cart_id': cart_id,
-                'catalog_id': cart_item.catalog_id
+            connection.execute(itemUpdate, {
+                'catalog_id': cart_item.catalog_id,
+                'cart_id': cart_id
             })
+
             return "OK"
         else:
             return {"message": "Invalid username or auth token!"}
