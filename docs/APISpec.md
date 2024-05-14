@@ -12,7 +12,8 @@ The API calls are made in this sequence when signing up:
 2. `Auth Login`
 3. `Update Username`
 4. `Update Password`
-5. `Add Money to Wallet`
+5. `Deposit Money to Wallet`
+6. `Withdraw Money from Wallet`
 
 ### 1.1. Create Account - `/users/create_user` (POST)
 
