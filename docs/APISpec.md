@@ -155,10 +155,22 @@ Used for seller to create a seller portfolio once account is crated.
 ### 3.3. Add Shoes - `/portfolio/add_item` (POST)
 Used for seller to create a seller portfolio once account is crated.
 
-**Query Parameters**:
-- `portfolio_id`: ID tied to the user's shoe portfolio.
-- `shoe_id`: ID tied to the shoe that will be added.
-- `quantity`: How many of those shoes will be sold.
+
+```json
+{
+  "username": "string",
+  "auth_token": "string",
+  "items" : [
+   {
+     "title": "string",
+     "brand": "string",
+     "size": "number",
+     "price": "integer",
+     "quantity": "integer"
+   }
+  ]
+}
+```
 
 **Response**:
 
