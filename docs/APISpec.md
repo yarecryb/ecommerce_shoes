@@ -225,7 +225,7 @@ Adds a specific shoe listing to the customer's cart
 }
 ```
 
-### 2.4. Checkout Cart - `/carts/{cart_id}/checkout` (POST)
+### 2.4. Checkout Cart - `/carts/checkout` (POST)
 
 Processes the checkout of the cart, including payment handling and order confirmation.
 
@@ -260,17 +260,19 @@ Used for seller to add an item to the catalog
 
 **Response**:
 ```json
-[
-    {
-        "title": "string",
-        "brand": "string",
-        "size": "float",
-        "price": "string",
-        "quantity": "integer",
-        "username": "string",
-        "auth_token": "string",
-    }
-]
+{
+    "username": "string",
+    "auth_token": "string",
+    [
+        {
+            "title": "string",
+            "brand": "string",
+            "size": "float",
+            "price": "string",
+            "quantity": "integer"
+        }
+    ]
+}
 ```
 
 **Response**:
@@ -301,7 +303,8 @@ Used for seller to show what items they have listed
         "title": "string",
         "brand": "string",
         "size": "float",
-        "price": "string"
+        "price": "string",
+        "quantity": "integer"
     }
 ]
 ```
