@@ -23,7 +23,7 @@ Retrieves the list of available shoe listings based on optional filters like siz
         "brand": "string",     
         "size": "integer",
         "price": "float",
-        "created_at": "string" # technically a time_stampt
+        "created_at": "string" # technically a time_stamptz
     }
 ]
 ```
