@@ -279,7 +279,7 @@ Used for seller to add an item to the catalog
 {
     "List of Catalog Id's:": "list(integers)"
 }
-'''
+```
 
 ### 3.2. List Portfolio - `/portfolio/list_items` (POST)
 Used for seller to show what items they have listed
