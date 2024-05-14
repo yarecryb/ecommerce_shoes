@@ -135,8 +135,8 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
             """)
             # Execute the update
             connection.execute(itemUpdate, {
-                'catalog_id': cart_item.catalog_id,
-                'cart_id': cart_id
+                'Catalog_id': cart_item.catalog_id,
+                'Cart_id': cart_id
             })
 
             return "OK"

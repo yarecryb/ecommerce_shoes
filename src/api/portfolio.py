@@ -15,7 +15,7 @@ class Auth(BaseModel):
     auth_token: str
 
 
-class ItemDetail(BaseModel):
+class ItemDetail(Auth):
     title: str
     brand: str
     size: float

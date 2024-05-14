@@ -32,23 +32,34 @@ Retrieves the list of available shoe listings based on optional filters like siz
 
 Creates a new shopping cart for the customer.
 
+**Request**:
+
+```json
+{
+    "username": "integer",
+    "auth_token": "string  # Once user has been logged in, a authentication token will be given
+}
+```
+
 **Response**:
 
 ```json
 {
-    "cart_id": "string" /* This ID will be used for future calls to add items and checkout */
+    "Cart ID": "string"
 }
 ```
 
-### 1.3. Add Item to Cart - `/carts/{cart_id}/items/{listing_id}` (PUT)
+### 1.3. Add Item to Cart - `/carts/{cart_id}/add_item` (POST)
 
-Adds a specific shoe listing to the customer's cart or updates the quantity of an existing item in the cart.
+Adds a specific shoe listing to the customer's cart
 
 **Request**:
 
 ```json
 {
-  "quantity": "integer"
+    "username": "integer",
+    "auth_token": "string",
+    "catalog_id": "int"
 }
 ```
 
@@ -56,7 +67,8 @@ Adds a specific shoe listing to the customer's cart or updates the quantity of a
 
 ```json
 {
-    "success": "boolean"
+    "Catalog ID": "string",
+    "Cart ID": "string"
 }
 ```
 
@@ -68,8 +80,9 @@ Processes the checkout of the cart, including payment handling and order confirm
 
 ```json
 {
-  "payment_method": "string",
-  "shipping_address": "string"
+    "username": "integer",
+    "auth_token": "string",
+    "cart_id": "int"
 }
 ```
 
@@ -77,10 +90,10 @@ Processes the checkout of the cart, including payment handling and order confirm
 
 ```json
 {
-    "total_items": "integer",
-    "total_amount": "integer"
+    "Catalog ID": "string"
 }
 ```
+
 ## 2. User Login and Signup
 
 The API calls are made in this sequence when signing up:
@@ -93,7 +106,7 @@ The API calls are made in this sequence when signing up:
 
 Sends user data needed to create an account.
 
-**Query Parameters**:
+**Request**:
 ```json
 [
     {
@@ -117,40 +130,98 @@ Sends user data needed to create an account.
 
 Used for user to login once account is crated.
 
-**Query Parameters**:
-- `username`: Username used for login.
-- `password`: Used for login.
+**Request**:
+```json
+{
+    "username": "string",
+    "password": "string"
+}
+```
 
 **Response**:
 
 ```json
 {
+    "Login successful!",
     "auth_token": "string"
+}
+```
+
+### 2.3. Change Username - `/auth/update_username` (POST)
+
+Used for user to change their username
+
+**Request**:
+```json
+{
+    "current_username": "string",
+    "new_username": "string",
+    "password": "string",
+    "auth_token": "string"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Username Changed!",
+}
+```
+
+### 2.4. Change Password - `/auth/update_password` (POST)
+
+Used for user to change their username
+
+**Request**:
+```json
+{
+    "current_username": "string",
+    "current_password": "string",
+    "new_password": "string",
+    "auth_token": "string"
+}
+```
+
+**Response**:
+
+```json
+{
+    "Password Changed!",
 }
 ```
 
 ## 3. Posting as Seller
 
 The API calls are made in this sequence when making a purchase:
-1. `Make Portfolio`
-2. `Add Shoes`
-3. `Add Item to Cart` (Can be called multiple times)
-4. `Checkout Cart`
+1. `Add Item`
+2. `List Items`
+3. `Delete Items`
 
-### 3.1. Make Portfolio - `/portfolio` (POST)
-Used for seller to create a seller portfolio once account is crated.
+### 3.1. Add Items - `/portfolio/add_items` (POST)
+Used for seller to add an item to the catalog
 
-**Query Parameters**:
-- `username`: Username used for login.
+```json
+[
+    {
+        "title": "string",
+        "brand": "string",
+        "size": "float",
+        "price": "string",
+        "quantity": "integer"
+        "username": "string",
+        "auth_token": "string",
+    }
+]
+
+```
 
 **Response**:
 
 ```json
 {
-
-    "portfolio_id": "int"
+    "List of Catalog Id's:": "list(integers)"
 }
-```
 
 ### 3.3. Add Shoes - `/portfolio/add_item` (POST)
 Used for seller to create a seller portfolio once account is crated.
