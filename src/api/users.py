@@ -14,7 +14,6 @@ router = APIRouter(
 class User(BaseModel):
     full_name: str
     username: str
-
     email: str
     password: str
 
@@ -44,17 +43,25 @@ def create_user(new_users: list[User]):
         for user in new_users:
             # Check if the username already exists
             result = connection.execute(
-                sqlalchemy.text("SELECT * FROM users WHERE username = :username"),
-                {'username': user.username}
+                sqlalchemy.text("""
+                    SELECT username, email
+                    FROM users 
+                    WHERE username = :username OR email = :email
+                """),
+                {'username': user.username, 'email': user.email}
             ).fetchone()
             if result:
-                return {"error": f"The username '{user.username}' is already taken, please choose a different one."}
+                if result.username == user.username:
+                    return {"error": f"The username '{user.username}' is already taken, please choose a different one."}
+                else:
+                    return {"error": f"The email '{user.email}' is already taken, please choose a different one."}
             
             # If username does not exist, insert new user
             connection.execute(
-                sqlalchemy.text(
-                    "INSERT INTO users (username, email, password, full_name) VALUES (:username, :email, :password, :full_name)"
-                ),
+                sqlalchemy.text("""
+                    INSERT INTO users (username, email, password, full_name) 
+                    VALUES (:username, :email, :password, :full_name)
+                """),
                 [{
                     'username': user.username,
                     'email': user.email,
@@ -73,17 +80,26 @@ def login_user(credentials: LoginCredentials):
     with db.engine.begin() as connection:
         # Execute SQL to get the password associated with the username
         result = connection.execute(
-            sqlalchemy.text("SELECT password FROM users WHERE username = :username"),
+            sqlalchemy.text("""
+                SELECT password
+                FROM users 
+                WHERE username = :username
+            """),
             {'username': username}
         ).fetchone()
+
         # Check if result is not None and passwords match
-        if result and result[0] == password:
-            auth_token = connection.execute(
-            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
+        if result and result.password == password:
+            token = connection.execute(
+            sqlalchemy.text("""
+                SELECT auth_token
+                FROM users
+                WHERE username = :username
+            """),
             {'username': username}
-        ).fetchone()
-            print(auth_token[0])
-            return {"message": "Login successful!","Authentication Token": auth_token[0]}
+            ).fetchone()
+            print(token.auth_token)
+            return {"message": "Login successful!", "auth_token": token.auth_token}
         else:
             return {"message": "Invalid username or password."}
 
@@ -92,23 +108,22 @@ def login_user(credentials: LoginCredentials):
 @router.post("/update_username")
 def update_username(usernameRequest: UsernameUpdateRequest):
     with db.engine.begin() as connection:
-        password = connection.execute(
-            sqlalchemy.text("SELECT password FROM users WHERE username = :username"),
+        result = connection.execute(
+            sqlalchemy.text("""
+                SELECT password, auth_token
+                FROM users
+                WHERE username = :username
+            """),
             {'username': usernameRequest.current_username}
         ).fetchone()
-        if password and password[0] == usernameRequest.password:
-            usersUpdate = sqlalchemy.text(
-                "UPDATE users SET username = :new_username WHERE username = :current_username"
-            )
-            # Execute the update
-            connection.execute(usersUpdate, {
-                'new_username': usernameRequest.new_username, 
-                'current_username': usernameRequest.current_username
-            })
 
-            usersUpdate = sqlalchemy.text(
-                "UPDATE catalog SET username = :new_username WHERE username = :current_username"
-            )
+        # auth_token is type uuid so needs cast to string
+        if result and result.password == usernameRequest.password and str(result.auth_token) == usernameRequest.auth_token:
+            usersUpdate = sqlalchemy.text("""
+                UPDATE users 
+                SET username = :new_username 
+                WHERE username = :current_username
+            """)
             # Execute the update
             connection.execute(usersUpdate, {
                 'new_username': usernameRequest.new_username, 
@@ -120,25 +135,28 @@ def update_username(usernameRequest: UsernameUpdateRequest):
 
 @router.post("/update_password")
 def update_password(passwordRequest: PasswordUpdateRequest):
-    with db.engine.begin() as connection:
-        password = connection.execute(
-            sqlalchemy.text("SELECT password FROM users WHERE username = :username"),
+     with db.engine.begin() as connection:
+        result = connection.execute(
+            sqlalchemy.text("""
+                SELECT password, auth_token
+                FROM users
+                WHERE username = :username
+            """),
             {'username': passwordRequest.username}
         ).fetchone()
-        auth_token = connection.execute(
-            sqlalchemy.text("SELECT auth_token FROM users WHERE username = :username"),
-            {'username': passwordRequest.username}
-        ).fetchone()
-        if password and password[0] == passwordRequest.current_password and auth_token and str(auth_token[0]) == passwordRequest.auth_token:
-            usersUpdate = sqlalchemy.text(
-                "UPDATE users SET password = :new_password WHERE username = :current_username"
-            )
+
+        # auth_token is type uuid so needs cast to string
+        if result and result.password == passwordRequest.current_password and str(result.auth_token) == passwordRequest.auth_token:
+            usersUpdate = sqlalchemy.text("""
+                UPDATE users 
+                SET password = :new_password 
+                WHERE username = :username
+            """)
             # Execute the update
             connection.execute(usersUpdate, {
                 'new_password': passwordRequest.new_password, 
-                'current_username': passwordRequest.username
+                'username': passwordRequest.username
             })
-
             return "Password changed!"
         else:
             return "Invalid username or password."
