@@ -258,6 +258,7 @@ The API calls are made in this sequence when making a purchase:
 ### 3.1. Add Items - `/portfolio/add_items` (POST)
 Used for seller to add an item to the catalog
 
+**Response**:
 ```json
 [
     {
@@ -265,12 +266,11 @@ Used for seller to add an item to the catalog
         "brand": "string",
         "size": "float",
         "price": "string",
-        "quantity": "integer"
+        "quantity": "integer",
         "username": "string",
         "auth_token": "string",
     }
 ]
-
 ```
 
 **Response**:
@@ -279,6 +279,7 @@ Used for seller to add an item to the catalog
 {
     "List of Catalog Id's:": "list(integers)"
 }
+'''
 
 ### 3.2. List Portfolio - `/portfolio/list_items` (POST)
 Used for seller to show what items they have listed
