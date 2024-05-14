@@ -326,17 +326,3 @@ Used for seller to remove an item from their listing
     "Items deleted successfully"
 }
 ```
-
-### 3.5. Get Portfolio Items - `/portfolio/get_items` (GET)
-Used for seller to display current listings
-
-**Query Parameters**:
-- `portfolio_id`: ID tied to the user's shoe portfolio.
-
-**Response**:
-
-```json
-{
-    "shoes" : "listof objects"
-}
-```
