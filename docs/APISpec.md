@@ -39,7 +39,7 @@ Sends user data needed to create an account.
 ]
 ```
 
-### 1.2. Get Listings - `/users/login` (POST)
+### 1.2. User Login - `/users/login` (POST)
 
 Used for user to login once account is crated.
 
@@ -78,7 +78,7 @@ Used for user to change their username
 
 ```json
 {
-    "Username Changed!",
+    "Username changed!",
 }
 ```
 
