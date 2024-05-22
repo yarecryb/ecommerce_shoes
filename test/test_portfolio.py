@@ -84,3 +84,31 @@ def test_add_multiple_item(cleanup_db):
     for expected_item, actual_item in zip(example_items_with_ids, user_items_data):
         assert expected_item == actual_item
 
+
+def test_delete_item(cleanup_db):
+    create_user(example_user)
+    response = login_user(example_user_login)
+    auth_token = response.json()["auth_token"]
+    auth = {
+        "username": example_user["username"],
+        "auth_token": auth_token,
+    }
+    item_info = {
+        "username": example_user["username"],
+        "auth_token": auth_token,
+        "items": multiple_example_items
+    }
+    #Add items
+    item_reponse = add_item(item_info)
+    assert item_reponse.status_code == 200
+    item_response_data = item_reponse.json()
+    added_item_ids = item_response_data["List of Catalog Id's:"]
+
+    #Delete items
+    item_info["items"] = added_item_ids
+    response = delete_items(item_info)
+    assert response.status_code == 200
+
+    #List items, make sure response is empty
+    list_items_response = list_items(auth)
+    assert list_items_response.json() == []

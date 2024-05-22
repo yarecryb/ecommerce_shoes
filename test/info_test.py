@@ -86,3 +86,8 @@ def list_items(user_info):
     return client.post("/portfolio/list_items",
         headers=api_header,
         json=user_info)
+
+def delete_items(items):
+    return client.post("/portfolio/delete_item",
+        headers=api_header,
+        json=items)
