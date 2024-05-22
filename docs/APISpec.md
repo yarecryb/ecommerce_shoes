@@ -263,7 +263,7 @@ Used for seller to add an item to the catalog
 {
     "username": "string",
     "auth_token": "string",
-    [
+    "items": [
         {
             "title": "string",
             "brand": "string",
