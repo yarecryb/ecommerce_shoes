@@ -78,7 +78,7 @@ Used for user to change their username
 
 ```json
 {
-    "Username Changed!",
+    "Username changed!",
 }
 ```
 
