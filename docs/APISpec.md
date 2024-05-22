@@ -255,7 +255,7 @@ The API calls are made in this sequence when making a purchase:
 2. `List Items`
 3. `Delete Items`
 
-### 3.1. Add Items - `/portfolio/add_items` (POST)
+### 3.1. Add Items - `/portfolio/add_item` (POST)
 Used for seller to add an item to the catalog
 
 **Response**:
