@@ -18,3 +18,5 @@ async def get_api_key(request: Request, api_key_header: str = Security(api_key_h
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Forbidden"
         )
+
+
