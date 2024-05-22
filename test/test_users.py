@@ -1,8 +1,7 @@
 from .info_test import *
-import pytest
 
 @pytest.fixture
-def cleanup_user():
+def cleanup_db():
     yield
     with db.engine.begin() as connection:
         connection.execute(
@@ -12,11 +11,7 @@ def cleanup_user():
             {'username_original': example_user["username"], 'username_new': new_user["username"]}
         )
 
-def test_read_listings():
-    response = client.get("/listings/")
-    assert response.status_code == 200
-
-def test_create_login_user(cleanup_user):
+def test_create_login_user(cleanup_db):
     response = create_user(example_user)
     assert response.status_code == 200
     assert response.json() == "User(s) created!"
@@ -29,7 +24,7 @@ def test_create_login_user(cleanup_user):
     assert "message" in response.json()
     assert  response_data["message"] == "Login successful!"
 
-def test_change_username_password(cleanup_user):
+def test_change_username_password(cleanup_db):
     create_user(example_user)
     response = login_user(example_user_login)
     response_data = response.json()
