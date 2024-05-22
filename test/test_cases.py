@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 import sys
+import os
 import dotenv
 sys.path.append("..")
 
@@ -17,9 +18,8 @@ def test_read_listings():
 
 def test_create_user():
     api_header = {
-        "Authorization": 'access_token: 1d76d98cabe04a69e37d069fc137d4aa'
+        "access_token": os.environ.get("API_KEY")
     }
-    
     response = client.post("/users/create_users", 
         headers=api_header,
         json=[
