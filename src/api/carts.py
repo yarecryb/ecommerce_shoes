@@ -117,7 +117,7 @@ def create_cart(data: Auth):
 
 #TODO : update to one to many, add multiple items to cart
 @router.post("/{cart_id}/add_item")
-def set_cart_item(cart_id: int, cart_item: CartItem):
+def set_cart_item(cart_id: int, cart_item: CartItem, quantity: int):
     """ """
     with db.engine.begin() as connection:
         user_info = connection.execute(
@@ -130,14 +130,10 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
 
         if user_info and str(user_info.auth_token) == cart_item.auth_token:
             itemUpdate = sqlalchemy.text("""
-                UPDATE carts SET catalog_id = :catalog_id
-                WHERE cart_id = :cart_id
-            """)
-            # Execute the update
-            connection.execute(itemUpdate, {
-                'Catalog_id': cart_item.catalog_id,
-                'Cart_id': cart_id
-            })
+                INSERT INTO cart_items (catalog_id, cart_id, quantity) 
+                                         VALUES (:catalog_id, :user_id, :quantity)
+            """),
+            [{"catalog_id": cart_item.catalog_id,"cart_id": cart_id, "qunatity": quantity  }]
 
             return "OK"
         else:
