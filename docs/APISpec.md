@@ -328,7 +328,7 @@ Used for seller to remove an item from their listing
 }
 ```
 
-## 3. Vendor Information - Complex End Point
+## 4. Vendor Information - Complex End Point
 
 Provides various metrics for the vendor, such as total customers, average spent per customer, different brands sold, recurring customers, and total money spent. The metrics can be sorted based on the specified parameter.
 
