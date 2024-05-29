@@ -113,9 +113,6 @@ The user can add money to the wallet to buy shoes
 {
     "username": "string",
     "auth_token": "string",
-    "card_number": "string",
-    "expiration_date": "string",
-    "cvs": "integer",
     "amount": "float"
 }
 ```
