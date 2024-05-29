@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from enum import Enum
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy

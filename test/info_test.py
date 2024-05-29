@@ -1,9 +1,6 @@
 from fastapi.testclient import TestClient
 import sys
 import os
-import pytest
-import sqlalchemy
-from src import database as db
 
 sys.path.append("..")
 
