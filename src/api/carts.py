@@ -135,8 +135,8 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
             """)
             # Execute the update
             connection.execute(itemUpdate, {
-                'Catalog_id': cart_item.catalog_id,
-                'Cart_id': cart_id
+                'catalog_id': cart_item.catalog_id,
+                'cart_id': cart_id
             })
 
             return "OK"
@@ -174,6 +174,14 @@ def checkout(data: CheckoutCart):
             shoe_info = connection.execute(
                 sqlalchemy.text("""
                     UPDATE catalog SET quantity = quantity - 1
+                    WHERE id = :id
+                    RETURNING *
+                """), 
+                { 'id': cart_update.catalog_id}
+            ).fetchone()
+            sold_info = connection.execute(
+                sqlalchemy.text("""
+                    UPDATE catalog SET sold = quantity + sold
                     WHERE id = :id
                     RETURNING *
                 """), 
