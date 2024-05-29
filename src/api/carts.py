@@ -150,10 +150,63 @@ def checkout(data: CheckoutCart):
             """),
             {'username': data.username}
         ).fetchone()
+        items = connection.execute(
+            sqlalchemy.text("""
+                SELECT catalog_id, quantity
+                FROM cart_items
+                WHERE cart_id = :cart_id
+            """),
+            {
+                'cart_id': data.cart_id
+            }
+        )
         
 
         if user_info and str(user_info.auth_token) == data.auth_token:
-            
+
+            for item in items: 
+                stock = connection.execute(
+                sqlalchemy.text("""
+                    SELECT quantity
+                    FROM catalog
+                    WHERE id = :catalog_id
+                """),
+                {
+                    'catalog_id': item.catalog_id
+                }
+                    )
+                if stock >= item.quantity:
+                    shoe_info = connection.execute(
+                        sqlalchemy.text("""
+                            UPDATE catalog SET quantity = quantity - :quantity
+                            WHERE id = :id
+                            RETURNING *
+                        """), 
+                        { 'id': cart_update.catalog_id, 
+                         'quantity': item.quantity}
+                    ).fetchone()
+
+                    #Take money from buyer
+                    buyer_update = connection.execute(
+                        sqlalchemy.text("""
+                            UPDATE users SET wallet = wallet - :price
+                            WHERE id = :id
+                        """), 
+                        {
+                            'id': user_info.id,
+                            'price': shoe_info.price * item.quantity
+                        })
+
+                    seller_update = connection.execute(
+                        sqlalchemy.text("""
+                            UPDATE users SET wallet = wallet + :price
+                            WHERE id = :id
+                        """), {
+                            'id': shoe_info.user_id,
+                            'price': shoe_info.price * item.quantity
+                        })
+
+                     
             cart_update = connection.execute(
                 sqlalchemy.text("""
                     UPDATE carts SET bought = :bought 
@@ -167,34 +220,6 @@ def checkout(data: CheckoutCart):
             ).fetchone()
 
 
-            shoe_info = connection.execute(
-                sqlalchemy.text("""
-                    UPDATE catalog SET quantity = quantity - 1
-                    WHERE id = :id
-                    RETURNING *
-                """), 
-                { 'id': cart_update.catalog_id}
-            ).fetchone()
-
-            #Take money from buyer
-            buyer_update = connection.execute(
-                sqlalchemy.text("""
-                    UPDATE users SET wallet = wallet - :price
-                    WHERE id = :id
-                """), 
-                {
-                    'id': user_info.id,
-                    'price': shoe_info.price
-                })
-
-            seller_update = connection.execute(
-                sqlalchemy.text("""
-                    UPDATE users SET wallet = wallet + :price
-                    WHERE id = :id
-                """), {
-                    'id': shoe_info.user_id,
-                    'price': shoe_info.price
-                })
             print(shoe_info.user_id)
             return cart_update.catalog_id
 
