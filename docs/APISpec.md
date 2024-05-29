@@ -4,6 +4,7 @@ The API calls are made in this sequence when using the shop:
 1. `User Login and Signup`
 2. `Customer Purchasing`
 3. `Posting as Seller`
+4. `Vendor Information`
 
 ## 1. User Login and Signup
 
@@ -326,3 +327,33 @@ Used for seller to remove an item from their listing
     "Items deleted successfully"
 }
 ```
+
+## 4. Vendor Information - Complex End Point
+
+Provides various metrics for the vendor, such as total customers, average spent per customer, different brands sold, recurring customers, and total money spent. The metrics can be sorted based on the specified parameter.
+
+### 4.1. Vendor Leaderboard - '/portfolio/vendor_leaderboard?sort_by=' (POST)
+- sort_by: The metric by which to sort the results. Possible values are total_customers, avg_spent_per_customer, brands_sold, recurring_customers, total_money_spent.
+  
+**Query Parameters**:
+
+```json
+{
+  "username": "string",
+  "auth_token": "string",
+}
+```
+
+**Response**:
+
+```json
+{
+    "total_customers": "integer",
+    "avg_spent_per_customer": "float",
+    "brands_sold": "integer",
+    "recurring_customers": "integer",
+    "total_money_spent": "float"
+}
+```
+
+
