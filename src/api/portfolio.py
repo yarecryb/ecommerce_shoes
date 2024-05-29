@@ -160,18 +160,18 @@ def vendor_leaderboard(
                     SELECT carts.user_id, SUM(catalog.price * catalog.sold) as total_amount
                     FROM carts
                     JOIN catalog ON carts.catalog_id = catalog.id
-                    WHERE catalog.user_id = :user_id
+                    WHERE catalog.user_id = :user_id AND carts.bought = TRUE
                     GROUP BY carts.user_id
                 ),
                 recurring_customers AS (
                     SELECT carts.user_id
                     FROM carts
-                    WHERE catalog_id IS NOT NULL
+                    WHERE catalog_id IS NOT NULL AND carts.bought = TRUE
                     GROUP BY carts.user_id
                     HAVING COUNT(*) > 1
                 )
                 SELECT
-                    (SELECT COUNT(DISTINCT carts.user_id) FROM carts JOIN catalog ON carts.catalog_id = catalog.id WHERE catalog.user_id = :user_id) as total_customers,
+                    (SELECT COUNT(DISTINCT carts.user_id) FROM carts JOIN catalog ON carts.catalog_id = catalog.id WHERE catalog.user_id = :user_id AND carts.bought = TRUE) as total_customers,
                     (SELECT AVG(total_amount) FROM customer_totals) as avg_spent_per_customer,
                     (SELECT COUNT(DISTINCT brand) FROM catalog WHERE user_id = :user_id) as brands_sold,
                     (SELECT COUNT(*) FROM recurring_customers) as recurring_customers,
@@ -191,12 +191,10 @@ def vendor_leaderboard(
                 "total_money_spent": metrics.total_money_spent,
             }
 
-            # Sort and return the metrics based on the specified sort_by parameter
-            sorted_metrics = {k: v for k, v in sorted(metrics_dict.items(), key=lambda item: item[1], reverse=True)}
-
-            return {sort_by: sorted_metrics[sort_by]}
+            # Return only the metric specified by the sort_by parameter
+            return {sort_by: metrics_dict[sort_by]}
         else:
-            raise HTTPException(status_code=401, detail="Invalid Auth")
+            raise HTTPException(status_code=401, detail="Invalid auth")
         
 
 if __name__ == "__main__":
