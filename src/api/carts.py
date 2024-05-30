@@ -135,8 +135,8 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
             """)
             # Execute the update
             connection.execute(itemUpdate, {
-                'Catalog_id': cart_item.catalog_id,
-                'Cart_id': cart_id
+                'catalog_id': cart_item.catalog_id,
+                'cart_id': cart_id
             })
 
             return "OK"
@@ -155,6 +155,7 @@ def checkout(data: CheckoutCart):
             {'username': data.username}
         ).fetchone()
         
+        #check if quantity is above 0
 
         if user_info and str(user_info.auth_token) == data.auth_token:
             
@@ -179,6 +180,19 @@ def checkout(data: CheckoutCart):
                 """), 
                 { 'id': cart_update.catalog_id}
             ).fetchone()
+
+            # update ledger
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO catalog_ledger (customer_id, catalog_id, quantity)
+                    VALUES (:customer_id, :catalog_id, :quantity)
+                """),
+                [{
+                    "customer_id": user_info.id,
+                    "catalog_id": shoe_info.id,
+                    "quantity": 1
+                }]
+            )    
 
             #Take money from buyer
             buyer_update = connection.execute(

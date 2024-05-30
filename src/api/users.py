@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
-
+import bcrypt
 
 router = APIRouter(
     prefix="/users",
@@ -55,7 +55,8 @@ def create_user(new_users: list[User]):
                     return {"error": f"The username '{user.username}' is already taken, please choose a different one."}
                 else:
                     return {"error": f"The email '{user.email}' is already taken, please choose a different one."}
-            
+            hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
             # If username does not exist, insert new user
             connection.execute(
                 sqlalchemy.text("""
@@ -65,7 +66,7 @@ def create_user(new_users: list[User]):
                 [{
                     'username': user.username,
                     'email': user.email,
-                    'password': user.password,
+                    'password': hashed_password,
                     'full_name': user.full_name
                 }]
             )
@@ -87,9 +88,8 @@ def login_user(credentials: LoginCredentials):
             """),
             {'username': username}
         ).fetchone()
-
         # Check if result is not None and passwords match
-        if result and result.password == password:
+        if result and bcrypt.hashpw(password.encode('utf-8'), result.password.encode('utf-8')):
             token = connection.execute(
             sqlalchemy.text("""
                 SELECT auth_token
@@ -102,8 +102,6 @@ def login_user(credentials: LoginCredentials):
             return {"message": "Login successful!", "auth_token": token.auth_token}
         else:
             return {"message": "Invalid username or password."}
-
-# Example usage of router would be to include it in your FastAPI application setup
 
 @router.post("/update_username")
 def update_username(usernameRequest: UsernameUpdateRequest):
