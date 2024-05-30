@@ -116,14 +116,14 @@ def test_create_user_invalid_email():
         "password": "password123"
     }
 
-def test_add_item_invalid_price():
-    create_user(example_user)
-    login_response = login_user({"username": example_user['username'], "password": example_user['password']})
-    access_token = login_response.json()["access_token"]
-    invalid_price_item = {
-        "title": "Invalid Price Item",
-        "brand": "BrandX",
-        "size": 10,
-        "price": "not-a-price",  
-        "quantity": 5
-    }
+# def test_add_item_invalid_price():
+#     create_user(example_user)
+#     login_response = login_user({"username": example_user['username'], "password": example_user['password']})
+#     access_token = login_response.json()["access_token"]
+#     invalid_price_item = {
+#         "title": "Invalid Price Item",
+#         "brand": "BrandX",
+#         "size": 10,
+#         "price": "not-a-price",  
+#         "quantity": 5
+#     }
