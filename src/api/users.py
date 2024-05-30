@@ -116,7 +116,7 @@ def update_username(usernameRequest: UsernameUpdateRequest):
         ).fetchone()
 
         # auth_token is type uuid so needs cast to string
-        if result and result.password == usernameRequest.password and str(result.auth_token) == usernameRequest.auth_token:
+        if result and bcrypt.hashpw(usernameRequest.password.encode('utf-8'), result.password.encode('utf-8')) and str(result.auth_token) == usernameRequest.auth_token:
             usersUpdate = sqlalchemy.text("""
                 UPDATE users 
                 SET username = :new_username 
@@ -144,15 +144,16 @@ def update_password(passwordRequest: PasswordUpdateRequest):
         ).fetchone()
 
         # auth_token is type uuid so needs cast to string
-        if result and result.password == passwordRequest.current_password and str(result.auth_token) == passwordRequest.auth_token:
+        if result and bcrypt.hashpw(passwordRequest.current_password.encode('utf-8'), result.password.encode('utf-8')) and str(result.auth_token) == passwordRequest.auth_token:
             usersUpdate = sqlalchemy.text("""
                 UPDATE users 
                 SET password = :new_password 
                 WHERE username = :username
             """)
+            new_hashed_password = bcrypt.hashpw(passwordRequest.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             # Execute the update
             connection.execute(usersUpdate, {
-                'new_password': passwordRequest.new_password, 
+                'new_password': new_hashed_password, 
                 'username': passwordRequest.username
             })
             return "Password changed!"
