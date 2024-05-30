@@ -1,4 +1,9 @@
-from .info_test import *
+import pytest
+import sqlalchemy
+from .info_test import (
+    client, db, example_user, example_user_login, new_user, 
+    create_user, login_user, api_header
+)
 
 @pytest.fixture
 def cleanup_db():
@@ -20,9 +25,9 @@ def test_create_login_user(cleanup_db):
     assert response.status_code == 200
 
     response_data = response.json()
-    assert "auth_token" in response.json()
-    assert "message" in response.json()
-    assert  response_data["message"] == "Login successful!"
+    assert "auth_token" in response_data
+    assert "message" in response_data
+    assert response_data["message"] == "Login successful!"
 
 def test_change_username_password(cleanup_db):
     create_user(example_user)
@@ -43,7 +48,7 @@ def test_change_username_password(cleanup_db):
     
     assert update_response.status_code == 200
     update_response_data = update_response.json()
-    assert  update_response_data == "Username changed!"
+    assert update_response_data == "Username changed!"
 
     new_password_info = {
         "username": new_user["username"],
@@ -58,7 +63,7 @@ def test_change_username_password(cleanup_db):
     
     assert update_password_response.status_code == 200
     update_password_response_data = update_password_response.json()
-    assert  update_password_response_data == "Password changed!"
+    assert update_password_response_data == "Password changed!"
 
     new_user_login = {
         "username": new_user["username"],
@@ -68,6 +73,6 @@ def test_change_username_password(cleanup_db):
     response = login_user(new_user_login)
     assert response.status_code == 200
     response_data = response.json()
-    assert "auth_token" in response.json()
-    assert "message" in response.json()
-    assert  response_data["message"] == "Login successful!"
+    assert "auth_token" in response_data
+    assert "message" in response_data
+    assert response_data["message"] == "Login successful!"

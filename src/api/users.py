@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
+import uuid
 from src import database as db
-
+import bcrypt
 
 router = APIRouter(
     prefix="/users",
@@ -55,7 +56,8 @@ def create_user(new_users: list[User]):
                     return {"error": f"The username '{user.username}' is already taken, please choose a different one."}
                 else:
                     return {"error": f"The email '{user.email}' is already taken, please choose a different one."}
-            
+            hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
             # If username does not exist, insert new user
             connection.execute(
                 sqlalchemy.text("""
@@ -65,7 +67,7 @@ def create_user(new_users: list[User]):
                 [{
                     'username': user.username,
                     'email': user.email,
-                    'password': user.password,
+                    'password': hashed_password,
                     'full_name': user.full_name
                 }]
             )
@@ -87,23 +89,20 @@ def login_user(credentials: LoginCredentials):
             """),
             {'username': username}
         ).fetchone()
-
         # Check if result is not None and passwords match
-        if result and result.password == password:
-            token = connection.execute(
-            sqlalchemy.text("""
-                SELECT auth_token
-                FROM users
-                WHERE username = :username
-            """),
-            {'username': username}
-            ).fetchone()
-            print(token.auth_token)
-            return {"message": "Login successful!", "auth_token": token.auth_token}
+        if result and bcrypt.hashpw(password.encode('utf-8'), result.password.encode('utf-8')):
+            new_auth_token = str(uuid.uuid4())
+            connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users
+                    SET auth_token = :auth_token
+                    WHERE username = :username
+                """),
+                {'auth_token': new_auth_token, 'username': username}
+            )
+            return {"message": "Login successful!", "auth_token": new_auth_token}
         else:
             return {"message": "Invalid username or password."}
-
-# Example usage of router would be to include it in your FastAPI application setup
 
 @router.post("/update_username")
 def update_username(usernameRequest: UsernameUpdateRequest):
@@ -118,7 +117,7 @@ def update_username(usernameRequest: UsernameUpdateRequest):
         ).fetchone()
 
         # auth_token is type uuid so needs cast to string
-        if result and result.password == usernameRequest.password and str(result.auth_token) == usernameRequest.auth_token:
+        if result and bcrypt.hashpw(usernameRequest.password.encode('utf-8'), result.password.encode('utf-8')) and str(result.auth_token) == usernameRequest.auth_token:
             usersUpdate = sqlalchemy.text("""
                 UPDATE users 
                 SET username = :new_username 
@@ -146,15 +145,16 @@ def update_password(passwordRequest: PasswordUpdateRequest):
         ).fetchone()
 
         # auth_token is type uuid so needs cast to string
-        if result and result.password == passwordRequest.current_password and str(result.auth_token) == passwordRequest.auth_token:
+        if result and bcrypt.hashpw(passwordRequest.current_password.encode('utf-8'), result.password.encode('utf-8')) and str(result.auth_token) == passwordRequest.auth_token:
             usersUpdate = sqlalchemy.text("""
                 UPDATE users 
                 SET password = :new_password 
                 WHERE username = :username
             """)
+            new_hashed_password = bcrypt.hashpw(passwordRequest.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             # Execute the update
             connection.execute(usersUpdate, {
-                'new_password': passwordRequest.new_password, 
+                'new_password': new_hashed_password, 
                 'username': passwordRequest.username
             })
             return "Password changed!"
