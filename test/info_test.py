@@ -101,3 +101,29 @@ def delete_items(items):
     return client.post("/portfolio/delete_item",
         headers=api_header,
         json=items)
+
+def test_create_user_missing_fields():
+    incomplete_user = {
+        "full_name": "Incomplete User",
+        "username": "incomplete"
+    }
+
+def test_create_user_invalid_email():
+    user_with_invalid_email = {
+        "full_name": "Invalid Email User",
+        "username": "invalidemail",
+        "email": "not-an-email",
+        "password": "password123"
+    }
+
+def test_add_item_invalid_price():
+    create_user(example_user)
+    login_response = login_user({"username": example_user['username'], "password": example_user['password']})
+    access_token = login_response.json()["access_token"]
+    invalid_price_item = {
+        "title": "Invalid Price Item",
+        "brand": "BrandX",
+        "size": 10,
+        "price": "not-a-price",  
+        "quantity": 5
+    }
