@@ -57,7 +57,7 @@ SELECTING and UPDATING catalog quantity in two different calls
 3. In /carts/checkout/, if we had first retrieved the cart's status and then updated it in separate operations, the code would have encountered a lost update anomaly.
 
 Example issue
-![Example2](./concurrency2.png)
+![Example2](./concurrency3.png)
 
 Updating the cart's status within a single update statement to avoid concurrency issues.
 ```
