@@ -366,7 +366,7 @@ Provids a top ten list of brands that sold the most. Can be sorted by year, mont
 {
     "results": [
         {
-            "brand": "string,
+            "brand": "string",
             "shoes_sold": "integer",
             "rank": "integer"
         }
