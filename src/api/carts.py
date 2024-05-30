@@ -59,7 +59,7 @@ def create_cart(data: Auth):
 
 #TODO : update to one to many, add multiple items to cart
 @router.post("/{cart_id}/add_item")
-def set_cart_item(cart_id: int, cart_item: CartItem):
+def set_cart_item(cart_id: int, cart_item: CartItem, quantity: int):
     """ """
     with db.engine.begin() as connection:
         user_info = connection.execute(
@@ -71,15 +71,11 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
         ).fetchone()
 
         if user_info and str(user_info.auth_token) == cart_item.auth_token:
-            itemUpdate = sqlalchemy.text("""
-                UPDATE carts SET catalog_id = :catalog_id
-                WHERE cart_id = :cart_id
-            """)
-            # Execute the update
-            connection.execute(itemUpdate, {
-                'catalog_id': cart_item.catalog_id,
-                'cart_id': cart_id
-            })
+            connection.execute(sqlalchemy.text("""
+                INSERT INTO cart_items (catalog_id, cart_id, quantity) 
+                                         VALUES (:catalog_id, :cart_id, :quantity)
+            """),
+            [{"catalog_id": cart_item.catalog_id,"cart_id": cart_id, "quantity": quantity  }])
 
             return "OK"
         else:
@@ -87,7 +83,6 @@ def set_cart_item(cart_id: int, cart_item: CartItem):
 
 @router.post("/checkout/")
 def checkout(data: CheckoutCart):
-    """ """
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
@@ -97,72 +92,65 @@ def checkout(data: CheckoutCart):
             {'username': data.username}
         ).fetchone()
         
-        #check if quantity is above 0
+        if not user_info or str(user_info.auth_token) != data.auth_token:
+            raise HTTPException(status_code=400, detail="Invalid user credentials")
+        
+        items = connection.execute(
+            sqlalchemy.text("""
+                SELECT catalog_id, quantity
+                FROM cart_items
+                WHERE cart_id = :cart_id
+            """),
+            {'cart_id': data.cart_id}
+        ).fetchall()
 
-        if user_info and str(user_info.auth_token) == data.auth_token:
-            
-            cart_update = connection.execute(
+        for item in items:
+            stock = connection.execute(
                 sqlalchemy.text("""
-                    UPDATE carts SET bought = :bought 
-                    WHERE cart_id = :cart_id
-                    RETURNING user_id, catalog_id
-                """), 
-                {
-                    'bought': True,
-                    'cart_id': data.cart_id
-                }
-            ).fetchone()
+                    SELECT quantity
+                    FROM catalog
+                    WHERE id = :catalog_id
+                """),
+                {'catalog_id': item.catalog_id}
+            ).scalar()
 
+            if stock < item.quantity:
+                raise HTTPException(status_code=400, detail="Not enough stock for item {}".format(item.catalog_id))
 
             shoe_info = connection.execute(
                 sqlalchemy.text("""
-                    UPDATE catalog SET quantity = quantity - 1
+                    UPDATE catalog SET quantity = quantity - :quantity
                     WHERE id = :id
-                    RETURNING *
+                    RETURNING id, user_id, price
                 """), 
-                { 'id': cart_update.catalog_id}
-            ).fetchone()
-            connection.execute(
-                sqlalchemy.text("""
-                    UPDATE catalog SET sold = quantity + sold
-                    WHERE id = :id
-                    RETURNING *
-                """), 
-                { 'id': cart_update.catalog_id}
+                {'id': item.catalog_id, 'quantity': item.quantity}
             ).fetchone()
 
-            # update ledger
-            connection.execute(
-                sqlalchemy.text("""
-                    INSERT INTO catalog_ledger (customer_id, catalog_id, quantity)
-                    VALUES (:customer_id, :catalog_id, :quantity)
-                """),
-                [{
-                    "customer_id": user_info.id,
-                    "catalog_id": shoe_info.id,
-                    "quantity": 1
-                }]
-            )    
-
-            #Take money from buyer
+            # Take money from buyer
             connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet - :price
                     WHERE id = :id
                 """), 
-                {
-                    'id': user_info.id,
-                    'price': shoe_info.price
-                })
+                {'id': user_info.id, 'price': shoe_info.price * item.quantity}
+            )
 
+            # Add money to seller
             connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet + :price
                     WHERE id = :id
-                """), {
-                    'id': shoe_info.user_id,
-                    'price': shoe_info.price
-                })
-            print(shoe_info.user_id)
-            return cart_update.catalog_id
+                """), 
+                {'id': shoe_info.user_id, 'price': shoe_info.price * item.quantity}
+            )
 
+        cart_update = connection.execute(
+            sqlalchemy.text("""
+                UPDATE carts SET bought = :bought 
+                WHERE cart_id = :cart_id
+                RETURNING cart_id, user_id
+            """), 
+            {'bought': True, 'cart_id': data.cart_id}
+        ).fetchone()
+
+        return {"message": "Checkout successful", "cart_id": cart_update.cart_id}
