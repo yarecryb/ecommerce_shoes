@@ -205,10 +205,10 @@ def checkout(data: CheckoutCart):
         cart_update = connection.execute(
             sqlalchemy.text("""
                 UPDATE carts SET bought = :bought 
-                WHERE id = :cart_id
-                RETURNING id, user_id
+                WHERE cart_id = :cart_id
+                RETURNING cart_id, user_id
             """), 
             {'bought': True, 'cart_id': data.cart_id}
         ).fetchone()
 
-        return {"message": "Checkout successful", "cart_id": cart_update.id}
+        return {"message": "Checkout successful", "cart_id": cart_update.cart_id}
