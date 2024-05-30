@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 from enum import Enum
@@ -180,6 +180,14 @@ def checkout(data: CheckoutCart):
                 """), 
                 { 'id': cart_update.catalog_id}
             ).fetchone()
+            connection.execute(
+                sqlalchemy.text("""
+                    UPDATE catalog SET sold = quantity + sold
+                    WHERE id = :id
+                    RETURNING *
+                """), 
+                { 'id': cart_update.catalog_id}
+            ).fetchone()
 
             # update ledger
             connection.execute(
@@ -195,7 +203,7 @@ def checkout(data: CheckoutCart):
             )    
 
             #Take money from buyer
-            buyer_update = connection.execute(
+            connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet - :price
                     WHERE id = :id
@@ -205,7 +213,7 @@ def checkout(data: CheckoutCart):
                     'price': shoe_info.price
                 })
 
-            seller_update = connection.execute(
+            connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet + :price
                     WHERE id = :id

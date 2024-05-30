@@ -1,7 +1,5 @@
 from fastapi import APIRouter
-from fastapi import APIRouter, Depends,Query
-from pydantic import BaseModel
-from src.api import auth
+from fastapi import Query
 import sqlalchemy
 from src import database as db
 router = APIRouter()

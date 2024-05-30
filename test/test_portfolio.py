@@ -1,4 +1,10 @@
-from .info_test import *
+import pytest
+import sqlalchemy
+from .info_test import (
+    db, example_user, example_user_login, example_item, 
+    multiple_example_items, create_user, login_user, add_item, 
+    list_items, delete_items
+)
 
 @pytest.fixture
 def cleanup_db():
@@ -29,16 +35,16 @@ def test_add_one_item(cleanup_db):
         "auth_token": auth_token,
         "items": [example_item]
     }
-    #Add item
-    item_reponse = add_item(item_info)
-    assert item_reponse.status_code == 200
-    item_response_data = item_reponse.json()
+    # Add item
+    item_response = add_item(item_info)
+    assert item_response.status_code == 200
+    item_response_data = item_response.json()
     added_item_id = item_response_data["List of Catalog Id's:"][0]
 
     example_item_with_id = example_item.copy()
     example_item_with_id["id"] = added_item_id
 
-    #List item 
+    # List item 
     user_items = list_items(auth)
     assert user_items.status_code == 200
 
@@ -47,8 +53,8 @@ def test_add_one_item(cleanup_db):
 
     assert example_item_with_id == user_items_data[0]
 
-# test adding multiple items
-def test_add_multiple_item(cleanup_db):
+# Test adding multiple items
+def test_add_multiple_items(cleanup_db):
     create_user(example_user)
     response = login_user(example_user_login)
     auth_token = response.json()["auth_token"]
@@ -61,10 +67,10 @@ def test_add_multiple_item(cleanup_db):
         "auth_token": auth_token,
         "items": multiple_example_items
     }
-    #Add items
-    item_reponse = add_item(item_info)
-    assert item_reponse.status_code == 200
-    item_response_data = item_reponse.json()
+    # Add items
+    item_response = add_item(item_info)
+    assert item_response.status_code == 200
+    item_response_data = item_response.json()
     added_item_ids = item_response_data["List of Catalog Id's:"]
 
     example_items_with_ids = []
@@ -84,7 +90,6 @@ def test_add_multiple_item(cleanup_db):
     for expected_item, actual_item in zip(example_items_with_ids, user_items_data):
         assert expected_item == actual_item
 
-
 def test_delete_item(cleanup_db):
     create_user(example_user)
     response = login_user(example_user_login)
@@ -98,17 +103,17 @@ def test_delete_item(cleanup_db):
         "auth_token": auth_token,
         "items": multiple_example_items
     }
-    #Add items
-    item_reponse = add_item(item_info)
-    assert item_reponse.status_code == 200
-    item_response_data = item_reponse.json()
+    # Add items
+    item_response = add_item(item_info)
+    assert item_response.status_code == 200
+    item_response_data = item_response.json()
     added_item_ids = item_response_data["List of Catalog Id's:"]
 
-    #Delete items
+    # Delete items
     item_info["items"] = added_item_ids
     response = delete_items(item_info)
     assert response.status_code == 200
 
-    #List items, make sure response is empty
+    # List items, make sure response is empty
     list_items_response = list_items(auth)
     assert list_items_response.json() == []
