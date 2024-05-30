@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
 import sys
 import os
+import pytest
+import sqlalchemy
+from src import database as db
 
 sys.path.append("..")
 
@@ -63,6 +66,16 @@ multiple_example_items = [
         "quantity": 5
     }
 ]
+
+def wallet_withdraw(details):
+    return client.post("/wallet/withdraw",
+        headers=api_header,
+        json=details)
+
+def wallet_deposit(details):
+    return client.post("/wallet/deposit",
+        headers=api_header,
+        json=details)
 
 def create_user(user):
     return client.post("/users/create_users", 

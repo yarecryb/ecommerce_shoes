@@ -155,6 +155,7 @@ def checkout(data: CheckoutCart):
             {'username': data.username}
         ).fetchone()
         
+        #check if quantity is above 0
 
         if user_info and str(user_info.auth_token) == data.auth_token:
             
@@ -187,6 +188,19 @@ def checkout(data: CheckoutCart):
                 """), 
                 { 'id': cart_update.catalog_id}
             ).fetchone()
+
+            # update ledger
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO catalog_ledger (customer_id, catalog_id, quantity)
+                    VALUES (:customer_id, :catalog_id, :quantity)
+                """),
+                [{
+                    "customer_id": user_info.id,
+                    "catalog_id": shoe_info.id,
+                    "quantity": 1
+                }]
+            )    
 
             #Take money from buyer
             connection.execute(
