@@ -356,4 +356,17 @@ Provides various metrics for the vendor, such as total customers, average spent 
 }
 ```
 
+## 5.1 Top ten Information - Complex End Point /stats/top_ten?year=
+?month=
+?day=
+Provids a top ten list of brands that sold the most. Can be sorted by year, month or day.
 
+
+```json
+{
+    "results": [
+        {
+            "brand": "string,
+            "shoes_sold": "integer",
+            "rank": "integer"
+        }
