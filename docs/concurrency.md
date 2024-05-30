@@ -53,3 +53,20 @@ SELECTING and UPDATING catalog quantity in two different calls
                 {'id': item.catalog_id, 'quantity': item.quantity}
             ).fetchone()
 ```
+
+3. In /carts/checkout/, if we had first retrieved the cart's status and then updated it in separate operations, the code would have encountered a lost update anomaly.
+
+Example issue
+![Example2](./concurrency2.png)
+
+Updating the cart's status within a single update statement to avoid concurrency issues.
+```
+cart_update = connection.execute(
+    sqlalchemy.text("""
+        UPDATE carts SET bought = :bought 
+        WHERE cart_id = :cart_id
+        RETURNING cart_id, user_id
+    """), 
+    {'bought': True, 'cart_id': data.cart_id}
+).fetchone()
+```
