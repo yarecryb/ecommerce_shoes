@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
+import uuid
 from src import database as db
 import bcrypt
 
@@ -90,16 +91,16 @@ def login_user(credentials: LoginCredentials):
         ).fetchone()
         # Check if result is not None and passwords match
         if result and bcrypt.hashpw(password.encode('utf-8'), result.password.encode('utf-8')):
-            token = connection.execute(
-            sqlalchemy.text("""
-                SELECT auth_token
-                FROM users
-                WHERE username = :username
-            """),
-            {'username': username}
-            ).fetchone()
-            print(token.auth_token)
-            return {"message": "Login successful!", "auth_token": token.auth_token}
+            new_auth_token = str(uuid.uuid4())
+            connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users
+                    SET auth_token = :auth_token
+                    WHERE username = :username
+                """),
+                {'auth_token': new_auth_token, 'username': username}
+            )
+            return {"message": "Login successful!", "auth_token": new_auth_token}
         else:
             return {"message": "Invalid username or password."}
 
