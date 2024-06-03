@@ -89,8 +89,9 @@ def login_user(credentials: LoginCredentials):
             """),
             {'username': username}
         ).fetchone()
+        
         # Check if result is not None and passwords match
-        if result and bcrypt.hashpw(password.encode('utf-8'), result.password.encode('utf-8')):
+        if result and bcrypt.checkpw(password.encode('utf-8'), result.password.encode('utf-8')):
             new_auth_token = str(uuid.uuid4())
             connection.execute(
                 sqlalchemy.text("""
@@ -103,6 +104,7 @@ def login_user(credentials: LoginCredentials):
             return {"message": "Login successful!", "auth_token": new_auth_token}
         else:
             return {"message": "Invalid username or password."}
+
 
 @router.post("/update_username")
 def update_username(usernameRequest: UsernameUpdateRequest):
