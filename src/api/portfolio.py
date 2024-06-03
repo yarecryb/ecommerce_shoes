@@ -151,7 +151,8 @@ class VendorLeaderboardRequest(Auth):
     sort_by: str
 
 class VendorRanking(BaseModel):
-    user_id: int
+    full_name: str
+    username: str
     total_money_sold: float
     rank: int
 
@@ -165,7 +166,7 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
-                SELECT auth_token, id
+                SELECT auth_token, id, full_name, username
                 FROM users WHERE username = :username
             """),
             {'username': data.username}
@@ -213,10 +214,12 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
             # Ranking Query
             ranking_query = """
                 SELECT 
-                    user_id,
+                    users.full_name,
+                    users.username,
                     SUM(price * quantity) as total_money_sold
                 FROM catalog
-                GROUP BY user_id
+                JOIN users ON catalog.user_id = users.id
+                GROUP BY users.id
                 ORDER BY total_money_sold DESC
             """
 
@@ -230,13 +233,15 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
             for rank, row in enumerate(rankings, start=1):
                 if rank <= 5:
                     top_5.append(VendorRanking(
-                        user_id=row.user_id,
+                        full_name=row.full_name,
+                        username=row.username,
                         total_money_sold=row.total_money_sold,
                         rank=rank
                     ))
-                if row.user_id == user_info.id:
+                if row.username == user_info.username:
                     user_rank = VendorRanking(
-                        user_id=row.user_id,
+                        full_name=row.full_name,
+                        username=row.username,
                         total_money_sold=row.total_money_sold,
                         rank=rank
                     )
