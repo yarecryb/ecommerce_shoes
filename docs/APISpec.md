@@ -5,6 +5,7 @@ The API calls are made in this sequence when using the shop:
 2. `Customer Purchasing`
 3. `Posting as Seller`
 4. `Vendor Information`
+5. `Top Ten Information`
 
 ## 1. User Login and Signup
 
@@ -210,7 +211,8 @@ Adds a specific shoe listing to the customer's cart
 {
     "username": "integer",
     "auth_token": "string",
-    "catalog_id": "int"
+    "catalog_id": "int",
+    "quantity": "int"
 }
 ```
 
@@ -332,7 +334,7 @@ Used for seller to remove an item from their listing
 
 Provides various metrics for the vendor, such as total customers, average spent per customer, different brands sold, recurring customers, and total money spent. The metrics can be sorted based on the specified parameter.
 
-### 4.1. Vendor Leaderboard - '/portfolio/vendor_leaderboard?sort_by=' (POST)
+### 4.1. Vendor Leaderboard - '/portfolio/vendor_leaderboard' (POST)
 - sort_by: The metric by which to sort the results. Possible values are total_customers, avg_spent_per_customer, brands_sold, recurring_customers, total_money_spent.
   
 **Query Parameters**:
@@ -341,6 +343,7 @@ Provides various metrics for the vendor, such as total customers, average spent 
 {
   "username": "string",
   "auth_token": "string",
+  "sort_by": "string" # Possible values are total_customers, avg_spent_per_customer, brands_sold, recurring_customers, total_money_spent
 }
 ```
 
@@ -356,7 +359,7 @@ Provides various metrics for the vendor, such as total customers, average spent 
 }
 ```
 
-## 5.1 Top ten Information - Complex End Point /stats/top_ten?year=
+## 5.1 Top Ten Information - Complex End Point /stats/top_ten?year=
 ?month=
 ?day=
 Provids a top ten list of brands that sold the most. Can be sorted by year, month or day.
