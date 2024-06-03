@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
@@ -9,16 +9,16 @@ router = APIRouter(
     tags=["portfolio"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
 class Auth(BaseModel):
     username: str
     auth_token: str
-
 
 class ItemDetail(BaseModel):
     title: str
     brand: str
     size: float
-    price: str
+    price: float
     quantity: int
 
 class ItemDetailWithID(ItemDetail):
@@ -29,7 +29,6 @@ class ItemListing(Auth):
 
 class ItemIDs(Auth):
     items: list[int]
-
 
 @router.post("/add_item")
 def add_item(data: ItemListing):
@@ -43,7 +42,6 @@ def add_item(data: ItemListing):
             {'username': data.username}
         ).fetchone()
 
-        # Check if user auth_token is valid before inserting items
         if user_info and str(user_info.auth_token) == data.auth_token:
             for item in data.items:
                 portfolio_id = connection.execute(
@@ -62,6 +60,20 @@ def add_item(data: ItemListing):
                         }
                 )
                 catalog_id.append(portfolio_id.fetchone().id)
+                connection.execute(
+                    sqlalchemy.text("""
+                        INSERT INTO catalog_ledger (seller_id, brand, price, quantity, description)
+                        VALUES (:seller_id, :brand, :price, :quantity, :description) 
+                        RETURNING id
+                    """),
+                        {
+                            'seller_id': user_info.id,
+                            'brand': item.brand,
+                            'price': item.price,
+                            'quantity': item.quantity,
+                            'description': "Added Item to the Catalog"
+                        }
+                )
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
         
@@ -69,7 +81,6 @@ def add_item(data: ItemListing):
         "List of Catalog Id's:": catalog_id
     }
 
-# returns all listings that belong to the user logged in
 @router.post("/list_items")
 def list_items(user: Auth):
     with db.engine.begin() as connection:
@@ -105,7 +116,6 @@ def list_items(user: Auth):
             return item_list
     raise HTTPException(status_code=401, detail="Invalid auth")
 
-
 @router.post("/delete_item")
 def delete_item(data: ItemIDs):
     with db.engine.begin() as connection:
@@ -118,7 +128,6 @@ def delete_item(data: ItemIDs):
         ).fetchone()
         if user_info and str(user_info.auth_token) == data.auth_token:
             for item in data.items:
-                # Delete the item if auth_token is valid
                 connection.execute(
                     sqlalchemy.text("""
                         DELETE FROM catalog 
@@ -138,43 +147,54 @@ class VendorMetrics(BaseModel):
     recurring_customers: int
     total_money_spent: float
 
+class VendorLeaderboardRequest(Auth):
+    sort_by: str
+
+class VendorRanking(BaseModel):
+    user_id: int
+    total_money_sold: float
+    rank: int
+
 @router.post("/vendor_leaderboard")
-def vendor_leaderboard(
-    user: Auth, 
-    sort_by: str = Query("total_customers", enum=["total_customers", "avg_spent_per_customer", "brands_sold", "recurring_customers", "total_money_spent"])
-):
+def vendor_leaderboard(data: VendorLeaderboardRequest):
+    valid_sort_fields = ["total_customers", "avg_spent_per_customer", "brands_sold", "recurring_customers", "total_money_spent"]
+    
+    if data.sort_by not in valid_sort_fields:
+        raise HTTPException(status_code=400, detail="Invalid sort_by value")
+
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
                 SELECT auth_token, id
                 FROM users WHERE username = :username
             """),
-            {'username': user.username}
+            {'username': data.username}
         ).fetchone()
 
-        if user_info and str(user_info.auth_token) == user.auth_token:
-            # Fetch metrics
+        if user_info and str(user_info.auth_token) == data.auth_token:
             metrics_query = """
                 WITH customer_totals AS (
-                    SELECT carts.user_id, SUM(catalog.price * catalog.sold) as total_amount
+                    SELECT carts.user_id, SUM(catalog.price * cart_items.quantity) as total_amount
                     FROM carts
-                    JOIN catalog ON carts.catalog_id = catalog.id
+                    JOIN cart_items ON carts.cart_id = cart_items.cart_id
+                    JOIN catalog ON cart_items.catalog_id = catalog.id
                     WHERE catalog.user_id = :user_id AND carts.bought = TRUE
                     GROUP BY carts.user_id
                 ),
                 recurring_customers AS (
                     SELECT carts.user_id
                     FROM carts
-                    WHERE catalog_id IS NOT NULL AND carts.bought = TRUE
+                    JOIN cart_items ON carts.cart_id = cart_items.cart_id
+                    WHERE cart_items.catalog_id IS NOT NULL AND carts.bought = TRUE
                     GROUP BY carts.user_id
                     HAVING COUNT(*) > 1
                 )
                 SELECT
-                    (SELECT COUNT(DISTINCT carts.user_id) FROM carts JOIN catalog ON carts.catalog_id = catalog.id WHERE catalog.user_id = :user_id AND carts.bought = TRUE) as total_customers,
+                    (SELECT COUNT(DISTINCT carts.user_id) FROM carts JOIN cart_items ON carts.cart_id = cart_items.cart_id JOIN catalog ON cart_items.catalog_id = catalog.id WHERE catalog.user_id = :user_id AND carts.bought = TRUE) as total_customers,
                     (SELECT AVG(total_amount) FROM customer_totals) as avg_spent_per_customer,
                     (SELECT COUNT(DISTINCT brand) FROM catalog WHERE user_id = :user_id) as brands_sold,
                     (SELECT COUNT(*) FROM recurring_customers) as recurring_customers,
-                    (SELECT SUM(price * sold) FROM catalog WHERE user_id = :user_id) as total_money_spent
+                    (SELECT SUM(price * quantity) FROM catalog WHERE user_id = :user_id) as total_money_spent
             """
 
             metrics = connection.execute(
@@ -190,11 +210,44 @@ def vendor_leaderboard(
                 "total_money_spent": metrics.total_money_spent,
             }
 
-            # Return only the metric specified by the sort_by parameter
-            return {sort_by: metrics_dict[sort_by]}
+            # Ranking Query
+            ranking_query = """
+                SELECT 
+                    user_id,
+                    SUM(price * quantity) as total_money_sold
+                FROM catalog
+                GROUP BY user_id
+                ORDER BY total_money_sold DESC
+            """
+
+            rankings = connection.execute(
+                sqlalchemy.text(ranking_query)
+            ).fetchall()
+
+            user_rank = None
+            top_5 = []
+
+            for rank, row in enumerate(rankings, start=1):
+                if rank <= 5:
+                    top_5.append(VendorRanking(
+                        user_id=row.user_id,
+                        total_money_sold=row.total_money_sold,
+                        rank=rank
+                    ))
+                if row.user_id == user_info.id:
+                    user_rank = VendorRanking(
+                        user_id=row.user_id,
+                        total_money_sold=row.total_money_sold,
+                        rank=rank
+                    )
+
+            return {
+                data.sort_by: metrics_dict[data.sort_by],
+                "user_rank": user_rank,
+                "top_5": top_5
+            }
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
-        
 
 if __name__ == "__main__":
     print(add_item())
