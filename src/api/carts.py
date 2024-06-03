@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 from src.api import auth
-from enum import Enum
 import sqlalchemy
 from src import database as db
 
@@ -17,15 +16,14 @@ class Auth(BaseModel):
 
 class CartItem(Auth):
     catalog_id: int
+    quantity: int
 
 class CheckoutCart(Auth):
     cart_id: int
 
 @router.post("/")
 def create_cart(data: Auth):
-    """ Create a new cart for a user if authentication succeeds. """
     with db.engine.begin() as connection:
-        # Get the authentication token from the users table
         user_info = connection.execute(
             sqlalchemy.text("""
                 SELECT auth_token, id
@@ -34,33 +32,24 @@ def create_cart(data: Auth):
             {'username': data.username}
         ).fetchone()
         if user_info and str(user_info.auth_token) == data.auth_token:
-            # Compare the fetched token with the provided one in the request
-            if str(user_info.auth_token) == data.auth_token:
-                # Insert a new cart entry into the carts table
-                cart_result = connection.execute(
-                    sqlalchemy.text("""
-                        INSERT INTO carts (user_id, bought)
-                        VALUES (:user_id, :bought) 
-                        RETURNING cart_id
-                    """),
-                    {
-                        'user_id': user_info.id,
-                        'bought': False  # Use Python's boolean False instead of string "False"
-                    }
-                ).fetchone()  # Fetch the result of the query which includes the cart_id
+            cart_result = connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO carts (user_id, bought)
+                    VALUES (:user_id, :bought) 
+                    RETURNING cart_id
+                """),
+                {
+                    'user_id': user_info.id,
+                    'bought': False
+                }
+            ).fetchone()
 
-                # Print the cart_id from the result
-                return {"Cart ID": str(cart_result.cart_id)}
-            else:
-                return {"message": "Invalid username or auth token!"}
+            return {"Cart ID": str(cart_result.cart_id)}
         else:
-            raise HTTPException(status_code=401, detail="Invalid auth")
+            return {"message": "Invalid username or auth token!"}
 
-
-#TODO : update to one to many, add multiple items to cart
 @router.post("/{cart_id}/add_item")
-def set_cart_item(cart_id: int, cart_item: CartItem, quantity: int):
-    """ """
+def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
@@ -71,15 +60,41 @@ def set_cart_item(cart_id: int, cart_item: CartItem, quantity: int):
         ).fetchone()
 
         if user_info and str(user_info.auth_token) == cart_item.auth_token:
+            catalog_quantity = connection.execute(
+                sqlalchemy.text("""
+                    SELECT quantity
+                    FROM catalog
+                    WHERE id = :catalog_id
+                """),
+                {'catalog_id': cart_item.catalog_id}
+            ).scalar()
+
+            if catalog_quantity is None or catalog_quantity < cart_item.quantity:
+                raise HTTPException(status_code=400, detail="Not enough stock for item {}".format(cart_item.quantity))
+
+            cart_item_quantity = connection.execute(
+                sqlalchemy.text("""
+                    SELECT SUM(quantity)
+                    FROM cart_items
+                    WHERE cart_id = :cart_id AND catalog_id = :catalog_id
+                """),
+                {'cart_id': cart_id, 'catalog_id': cart_item.catalog_id}
+            ).scalar() or 0
+
+            total_quantity = cart_item_quantity + cart_item.quantity
+
+            if total_quantity > catalog_quantity:
+                raise HTTPException(status_code=400, detail="Total quantity for item {} exceeds available stock".format(cart_item.quantity))
+
             connection.execute(sqlalchemy.text("""
                 INSERT INTO cart_items (catalog_id, cart_id, quantity) 
                                          VALUES (:catalog_id, :cart_id, :quantity)
             """),
-            [{"catalog_id": cart_item.catalog_id,"cart_id": cart_id, "quantity": quantity  }])
+            {"catalog_id": cart_item.catalog_id, "cart_id": cart_id, "quantity": cart_item.quantity })
 
-            return "OK"
+            return {"message": "Item added successfully"}
         else:
-            return {"message": "Invalid username or auth token!"}
+            raise HTTPException(status_code=401, detail="Invalid username or auth token")
 
 @router.post("/checkout/")
 def checkout(data: CheckoutCart):
@@ -126,7 +141,6 @@ def checkout(data: CheckoutCart):
                 {'id': item.catalog_id, 'quantity': item.quantity}
             ).fetchone()
 
-            # Take money from buyer
             connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet - :price
@@ -135,7 +149,6 @@ def checkout(data: CheckoutCart):
                 {'id': user_info.id, 'price': shoe_info.price * item.quantity}
             )
 
-            # Add money to seller
             connection.execute(
                 sqlalchemy.text("""
                     UPDATE users SET wallet = wallet + :price
