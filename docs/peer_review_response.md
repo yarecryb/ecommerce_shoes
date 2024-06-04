@@ -106,44 +106,60 @@ Fixed.
 
 Schema/API comments
 1. Make the user email field unique.
+
 Fixed.
+
 2. Make all id fields unique. Even though they are auto-generated, it doesn't hurt to have additional security on that.
+
 Fixed.
 
 3. User auth. tokens should be unique to each user and enforced as such within the table.
+
 fixed.
 
 4. Add validation to ensure that the user wallet can't go below 0.
+
 Fixed. 
 
 5. Possibly add a Boolean "private" field that allows for sellers to not delete items from their catalog but simply hide them.
+
 Will implement.
 
 6. Price should be constrained to double precision like the wallet within catalog.
+
 will implement.
 
 7. Cart should store the price at time of adding instead of referencing the catalog to prevent concurrency issues.
+
 No, if the price increases after the user adds to cart, the price increase should be reflected at checkout.
 
 8. The Boolean bought within carts should default to False, not null, as the default creation state of a cart is not bought.
+
 Fixed.
 
 9. The cart table should be renamed to cart_items potentially, as each entry only supports a single item
+
 Fixed.
 
 10. Size should be changed to text as sizes often are not purely numerical in representation
+
 Fixed.
 
 11. Should quantity be defaulted to 1? The field should be required with no default as the seller must enter a quantity I feel.
+
 Default is 0 now.
 
 12. Possibly add a reviews table to support seller review functionality (mentioned within my feature comments issue post).
+
 Will implement
 
 ## Gabe Riedel
 1. Your authentication checks in create_cart seem redundant, you only need one if-else block with the else containing the HTTPException
+
 fixed, one if else block
+
 2. In create_cart you handle invalid_auth errors with a raise exception, but you do not handle that with an exception in set_cart_item
+
 fixed, now raising exception.
 
 3. In list_items in portfolio.py, instead of doing SELECT *, identify in the query which columns you will actually use so you can save some time and not "over-query" than what is necessary
@@ -159,55 +175,81 @@ luhn_check has been removed
 fixed to remove redundant variables
 
 6. The SQLAlchemy statement I referred to in 5 has a typo, you refer to the users tables twice
+
 Thanks, fixed the typo. Removed redundant users
 
 7. The SQLAlchemy statement I referred to in 5 just stores the text of the query but does not form a connection so no query will be executed
+
 Fixed, now executes the query
 
 8. In login_user in users.py, remove the debug print statement when you push this to prod so that auth_tokens are not leaked
+
 print statement has been removed
 
 9. The logic for checking username and password is duplicated in your two update functions; you can move this logic out to a helper method
+
 Fixed.
 
 10. In users.py be more consistent in returning just JSON statements not strings
+
 Fixed, now only returning json for consistency
 
 11. In users.py, handle errors not by returning strings but with HTTPException handling
+
 Fixed, now raising 401 exception for invalid username or password
 
 12. Add some error handling in listings.py in case of connection failure
+
 Added.
 
+Schema/API comments
+
 1. Username and email in Users should not be nullable
+
 Fixed.
+
 2. For better normalization, you may want to add a cart_items table and move some of the data in carts there
+
 Done
 
 3. For better normalization, split users into account details with username, email, etc. and authentication details with password, auth, etc.
+
 This seems unnecessary since the users table just has all information about the user already.
 
 4. Update the API endpoint testing site to include your project name instead of Central Coast Cauldrons
+
 Fixed.
 
 5. Make sure the API endpoint responses all take comparable JSON forms
+
 Fixed
 
 6. Could add a ledger system for updating users' wallets instead of updating one variable that could cause concurrency issues
+
 Will implement
 
 7. You might not want to delete rows from the catalog, you can truncate instead or add a column to know if that item has been purchased
+
 Will implement
 
 8. Make IDs unique in schema
+
 Fixed
+
 9. Make username unique
+
 Fixed
+
 10. Make email unique
+
 Fixed 
+
 11. Make auth. keys unique
+
 Fixed
+
 12. Default 'bought' boolean variable to False
+
 Fixed
 
 ## Sean Hershey 
