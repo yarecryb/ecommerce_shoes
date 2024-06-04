@@ -66,7 +66,7 @@ def withdraw(withdraw_info: Wallet):
         # Check if the wallet balance is sufficient
         current_wallet_balance = connection.execute(
             sqlalchemy.text("""
-                SELECT wallet FROM users users WHERE username = :username
+                SELECT wallet FROM users WHERE username = :username
             """),
             {"username": withdraw_info.username}
         ).fetchone()
