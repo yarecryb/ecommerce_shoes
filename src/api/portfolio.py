@@ -67,18 +67,18 @@ def add_item(data: ItemListing):
         "List of Catalog Id's:": catalog_id
     }
 
-@router.post("/list_items")
-def list_items(user: Auth):
+@router.get("/list_items")
+def list_items(username: str, auth_token: str):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
                 SELECT auth_token, id
                 FROM users WHERE username = :username
             """),
-            {'username': user.username}
+            {'username': username}
         ).fetchone()
 
-        if user_info and str(user_info.auth_token) == user.auth_token:
+        if user_info and str(user_info.auth_token) == auth_token:
             items = connection.execute(
                 sqlalchemy.text("""
                     SELECT id, title, brand, size, price, quantity
@@ -246,6 +246,3 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
             }
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
-
-if __name__ == "__main__":
-    print(add_item())
