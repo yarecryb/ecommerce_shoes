@@ -12,7 +12,7 @@ _Thank you for the feedback on the 4 listed method. We understand the concern re
 
 8-11. Also in create_user it's recommended to store passwords as a hash rather than the password directly for security.
 
-_Thank you for the feedback. We've implemented this by hashing our passwords.__
+_Thank you for the feedback. We've implemented this by hashing our passwords._
 
 12. Also since username is not UNIQUE in the schema, update_passwords can fail if there are multiple users with the same username (though your create_username does attempt to handle creating only unique usernames)
 
