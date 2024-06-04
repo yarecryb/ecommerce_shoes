@@ -151,6 +151,26 @@ The user can withdraw money from the wallet
 }
 ```
 
+### 1.7. Get User Wallet Balance - `/wallet/balance` (GET)
+
+The user can get wallet balance
+
+**Request**:
+```json
+{
+    "username": "string",
+    "auth_token": "string",
+}
+```
+
+**Response**:
+
+```json
+{
+    "wallet_balance": "string"
+}
+```
+
 ## 2. Customer Purchasing
 
 The API calls are made in this sequence when making a purchase:
