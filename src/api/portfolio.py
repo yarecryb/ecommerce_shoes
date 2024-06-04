@@ -44,22 +44,25 @@ def add_item(data: ItemListing):
 
         if user_info and str(user_info.auth_token) == data.auth_token:
             for item in data.items:
-                portfolio_id = connection.execute(
-                    sqlalchemy.text("""
-                        INSERT INTO catalog (user_id, title, brand, size, price, quantity)
-                        VALUES (:user_id, :title, :brand, :size, :price, :quantity) 
-                        RETURNING id
-                    """),
-                        {
-                            'user_id': user_info.id,
-                            'title': item.title,
-                            'brand': item.brand,
-                            'size': item.size,
-                            'price': item.price,
-                            'quantity': item.quantity
-                        }
-                ).fetchone()
-                catalog_id.append(portfolio_id.id)
+                if item.quantity > 0:
+                    portfolio_id = connection.execute(
+                        sqlalchemy.text("""
+                            INSERT INTO catalog (user_id, title, brand, size, price, quantity)
+                            VALUES (:user_id, :title, :brand, :size, :price, :quantity) 
+                            RETURNING id
+                        """),
+                            {
+                                'user_id': user_info.id,
+                                'title': item.title,
+                                'brand': item.brand,
+                                'size': item.size,
+                                'price': item.price,
+                                'quantity': item.quantity
+                            }
+                    ).fetchone()
+                    catalog_id.append(portfolio_id.id)
+                else:
+                    raise HTTPException(status_code=401, detail="Invalid item amount")
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
         

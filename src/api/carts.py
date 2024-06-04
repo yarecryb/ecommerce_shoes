@@ -56,6 +56,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             sqlalchemy.text("""
                 SELECT auth_token, id
                 FROM users WHERE username = :username
+                FOR UPDATE
             """),
             {'username': cart_item.username}
         ).fetchone()
@@ -66,6 +67,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
                     SELECT quantity
                     FROM catalog
                     WHERE id = :catalog_id
+                    FOR UPDATE
                 """),
                 {'catalog_id': cart_item.catalog_id}
             ).scalar()
@@ -78,6 +80,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
                     SELECT SUM(quantity)
                     FROM cart_items
                     WHERE cart_id = :cart_id AND catalog_id = :catalog_id
+                    FOR UPDATE
                 """),
                 {'cart_id': cart_id, 'catalog_id': cart_item.catalog_id}
             ).scalar() or 0

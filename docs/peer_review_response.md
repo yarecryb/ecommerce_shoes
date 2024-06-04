@@ -1,7 +1,9 @@
 # All Peer Review Feedback
 
 ## Jessica Luu
-__Code Review Comments (Jessica Luu)__
+
+**Code Review Comments (Jessica Luu)**
+
 1. In create_cart, if there are simultaneous requests or if the auth_token is somehow changed since you do a select first, there could be race conditions. Consider either changing the isolation level or doing like a select for update so you can lock it.
 
 _Thank you for the feedback on the `create_cart` method. We will definitely add this to our implementation._
@@ -12,17 +14,17 @@ _Thank you for the feedback on the 4 listed method. We understand the concern re
 
 8-11. Also in create_user it's recommended to store passwords as a hash rather than the password directly for security.
 
-_Thank you for the feedback. We've implemented this by hashing our passwords.__
+\_Thank you for the feedback. We've implemented this by hashing our passwords.\_\_
 
 12. Also since username is not UNIQUE in the schema, update_passwords can fail if there are multiple users with the same username (though your create_username does attempt to handle creating only unique usernames)
 
-_Thank you for the feedback. Username IS unique since our implementation doesn't allow other users to create an account using a username already created._ 
+_Thank you for the feedback. Username IS unique since our implementation doesn't allow other users to create an account using a username already created._
 
 13-14. Deposit and Withdraw should handle concurrency.
 
 _Thank you for the feedback. We've handled concurrency now._
 
-__Schema/API Design comments (Jessica Luu)__
+**Schema/API Design comments (Jessica Luu)**
 1-4. Split the user table into two separate tables: one for user data and one for authentication details, and enforce a UNIQUE constraint on email and username. This normalization up to 3NF improves your create_users endpoint by eliminating the need for a select query, as insert failures will be handled by the UNIQUE constraint.
 
 _Split the user table into two separate tables: one for user data and one for authentication details, and enforce a UNIQUE constraint on email and username. This normalization up to 3NF improves your create_users endpoint by eliminating the need for a select query, as insert failures will be handled by the UNIQUE constraint._
@@ -75,7 +77,7 @@ Fixed. Username now uniquely identifies each user.
 
 4. Calls to fetch user_info before accessing the table with that data may fail if the user changes there data between queries. This should either be collapsed into a single query or protected against concurrency in some other fashion.
 
-A user changing their data inbetween queries would only matter when changing their username as the user_id will not change. Currently, our only endpoint using the username within the same query is /portfolio/vendor_leaderboard/ which has a conslidated query to fetch the username. 
+A user changing their data inbetween queries would only matter when changing their username as the user_id will not change. Currently, our only endpoint using the username within the same query is /portfolio/vendor_leaderboard/ which has a conslidated query to fetch the username.
 
 5. User data like passwords, emails, usernames, etc. should be encrypted within the database -- not stored as raw data.
 
@@ -90,21 +92,22 @@ Fixed.
 This is intended as users can add different items to different carts to save them then check out the carts with the items that they want.
 
 8. More concurrency issues exist within the cart process between the four update calls that should be resolved with collapse or high isolation levels.
-Will implement.
+   Will implement.
 
 9. Any validation or handling of credit cards (or any sensitive info) should be abstracted out of the package containing the database handling. It introduces a number of security risks when putting them here.
-Credit cards have been removed.
+   Credit cards have been removed.
 
 10. On line 108 of wallet.py, the following appears: current_wallet_balance = update_wallet =. Is there a reason for this as it seems to be a mistake given the code following it?
-Fixed. This was a mistake.
+    Fixed. This was a mistake.
 
 11. Deleting items from one's portfolio should clear it from any existing carts. Currently, users can still buy deleted items if it exists within their cart.
-Fixed.
+    Fixed.
 
 12. Currently, user wallets can go negative when purchasing. There should be a check for sufficient balance that is able to divert a call to refill the wallet should this check fail.
-Fixed.
+    Fixed.
 
 Schema/API comments
+
 1. Make the user email field unique.
 
 Fixed.
@@ -119,7 +122,7 @@ fixed.
 
 4. Add validation to ensure that the user wallet can't go below 0.
 
-Fixed. 
+Fixed.
 
 5. Possibly add a Boolean "private" field that allows for sellers to not delete items from their catalog but simply hide them.
 
@@ -154,6 +157,7 @@ Default is 0 now.
 Will implement
 
 ## Gabe Riedel
+
 1. Your authentication checks in create_cart seem redundant, you only need one if-else block with the else containing the HTTPException
 
 fixed, one if else block
@@ -162,7 +166,7 @@ fixed, one if else block
 
 fixed, now raising exception.
 
-3. In list_items in portfolio.py, instead of doing SELECT *, identify in the query which columns you will actually use so you can save some time and not "over-query" than what is necessary
+3. In list_items in portfolio.py, instead of doing SELECT \*, identify in the query which columns you will actually use so you can save some time and not "over-query" than what is necessary
 
 Fixing this to only query what we need
 
@@ -242,7 +246,7 @@ Fixed
 
 10. Make email unique
 
-Fixed 
+Fixed
 
 11. Make auth. keys unique
 
@@ -252,61 +256,116 @@ Fixed
 
 Fixed
 
-## Sean Hershey 
-__Code Review Comments (Sean Hershey)__
+## Sean Hershey
+
+**Code Review Comments (Sean Hershey)**
+
 1. in cart.py there is a redundant if str(user_info.auth_token) == data.auth_token:
-Fixed
+   Fixed
 2. in cart.py 'bought': False value insert is redundant if you let it be false by default and don't supply it
-Fixed
+   Fixed
 3. in cart.py your invalid username/auth token handling is different either do return {"message": "Invalid username or auth token!"} or raise HTTPException(status_code=401, detail="Invalid auth")
-Will Implement
-3. in cart.py 'Catalog_id' and 'Cart_id' in parameters should match the case of text for readability
-Will Implement
-4. in cart.py add_item should be renamed to set_item as only one item can exist or changed to add multiple items
-Will Implement
-5. in cart.py add_item should check if bought or otherwise clarify the purpose of the bought boolean logic
-Fixed
-6. in cart.py no auth message fail in checkout
-Will Implement
-7. in users.py check if change username is changing the username into one that already exists
-Already works
-8. in wallet.py no auth verification exists for deposits
-Will Implement
-9. in wallet.py current_wallet_balance has table typo "users users" instead of "users"
-Fixed
-10. in listings.py add error messages or codes for a retrieving listing failure
-Will Implement
-11. inconsistent new lines in SQL statements throughout effect readability
-Will Implement 
+   Will Implement
+4. in cart.py 'Catalog_id' and 'Cart_id' in parameters should match the case of text for readability
+   Will Implement
+5. in cart.py add_item should be renamed to set_item as only one item can exist or changed to add multiple items
+   Will Implement
+6. in cart.py add_item should check if bought or otherwise clarify the purpose of the bought boolean logic
+   Fixed
+7. in cart.py no auth message fail in checkout
+   Will Implement
+8. in users.py check if change username is changing the username into one that already exists
+   Already works
+9. in wallet.py no auth verification exists for deposits
+   Will Implement
+10. in wallet.py current_wallet_balance has table typo "users users" instead of "users"
+    Fixed
+11. in listings.py add error messages or codes for a retrieving listing failure
+    Will Implement
+12. inconsistent new lines in SQL statements throughout effect readability
+    Will Implement
 
-__Schema/API Design comments (Sean Hershey)__
+**Schema/API Design comments (Sean Hershey)**
+
 1. responses should be labbelled message and be reflected that way in code
-Fixed
+   Fixed
 2. in cases of returning auth_token no additional message is needed
-Fixed
+   Fixed
 3. created_at should be a time_stamp not string
-Will Implement
+   Will Implement
 4. in cart schema bought boolean defaults to null not false
-Removed whole "bought" idea
+   Removed whole "bought" idea
 5. in users id is not unique
-It is unique
+   It is unique
 6. in users username is not unique
-Will Implement
+   Will Implement
 7. in users email is not unique
-Will Implement
+   Will Implement
 8. in users auth_token is not unique
-Will Implement
+   Will Implement
 9. in catalog id is not unique
-Will Implement
+   Will Implement
 10. in carts id is not unique
-Will Implement
+    Will Implement
 11. in catalog price should be the same as price in wallet
-Will Implement
+    Will Implement
 12. in catalog price should be stored when added not referencing catalog
-Will Implement
-
+    Will Implement
 
 ## Arthur Umerov
 
-## Liam Hyde
+**Code Review Comments (Arthur Umerov)**
 
+1. In create_cart, if there are simultaneous requests or if the auth_token is changed, consider either changing the isolation level or using a select for update to avoid race conditions
+Fixed
+2. In create_user, store passwords as hashes rather than plaintext for security
+Fixed
+3. Ensure the email and username fields in the user table have a UNIQUE constraint to avoid duplicate entries and race conditions
+Fixed
+4. In set_cart_item, handle concurrency issues by performing a single query or by using locking mechanisms
+Fixed
+5. In listings.py, add indexing to frequently queried columns like brand and price to speed up searches
+Will implement
+6. In portfolio.py, ensure the quantity of items being added is a positive integer
+Fixed
+7. User data such as passwords, emails, and usernames should be encrypted in the database, not stored as raw data
+Fixed
+8. In wallet.py, ensure all credit card handling is abstracted out (use libraries or frameworks instead)
+Fixed
+9. In list_items in portfolio.py, specify the columns needed in the SELECT query to future proof
+Fixed
+10. Deleting items from one's portfolio should also remove them from any existing carts to prevent users from purchasing deleted items
+Fixed - instead of removing items, more checks were added to checkout
+11. Make sure user wallets cannot go below 0
+Fixed
+12. In carts.py, consider logging activity when adding items to the cart and checking out for reference/tracability
+Fixed
+
+**Schema/API Design comments (Arthur Umerov)**
+
+1. Split the user table into user details (username, email, ...) and authentication details (password, auth tokens)
+Fixed
+2. Ensure the email and username fields in the user table are unique
+Fixed
+3. Set NOT NULL constraints for essential fields like username, email, and password in the user table
+Fixed
+4. Use clear HTTP methods for API endpoints (DELETE for delete_item and GET for list_items)
+Fixed
+5. Change the wallet amount to an int and store cents instead of dollar floats
+
+6. Ensure all IDs (user, catalog, ...) are unique
+Fixed
+7. Use a timestamp data type for the created_at field instead of a string
+Fixed
+8. Set default values for Boolean fields
+Fixed
+9. Implement soft deletes for items (add a Boolean 'deleted' field to the items table)
+
+10. Split the catalog into a brands table and a brand_items table
+
+11. Split the cart table into a cart and cart_items table
+Fixed
+12. Add a Boolean 'private' field to allow sellers to hide an item from the catalog instead of deleting it
+
+
+## Liam Hyde
