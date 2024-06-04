@@ -102,7 +102,7 @@ def list_items(user: Auth):
             return item_list
     raise HTTPException(status_code=401, detail="Invalid auth")
 
-@router.post("/delete_item")
+@router.delete("/delete_item")
 def delete_item(data: ItemIDs):
     with db.engine.begin() as connection:
         user_info = connection.execute(
