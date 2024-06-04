@@ -16,6 +16,10 @@ class Wallet(BaseModel):
     auth_token: str
     amount: float
 
+class WalletInfo(BaseModel):
+    username: str
+    auth_token: str
+
 @router.post("/deposit")
 def deposit(deposit_info: Wallet):
     """Process a deposit after verifying the credit card details and user authentication."""
@@ -31,7 +35,7 @@ def deposit(deposit_info: Wallet):
             {'username': deposit_info.username}
         ).fetchone()
 
-        if str(deposit_info.auth_token) != str(auth_token[0]):
+        if auth_token is None or str(deposit_info.auth_token) != str(auth_token[0]):
             raise HTTPException(status_code=401, detail="Unauthorized access.")
 
         # Update user's wallet balance
@@ -47,7 +51,7 @@ def deposit(deposit_info: Wallet):
 
 @router.post("/withdraw")
 def withdraw(withdraw_info: Wallet):
-    """Process a wallet after verifying the credit card details and user authentication."""
+    """Process a withdrawal after verifying the credit card details and user authentication."""
 
     # Ensure the withdrawal amount is not negative
     if withdraw_info.amount <= 0:
@@ -64,14 +68,7 @@ def withdraw(withdraw_info: Wallet):
             raise HTTPException(status_code=401, detail="Unauthorized access.")
 
         # Check if the wallet balance is sufficient
-        current_wallet_balance = connection.execute(
-            sqlalchemy.text("""
-                SELECT wallet FROM users WHERE username = :username
-            """),
-            {"username": withdraw_info.username}
-        ).fetchone()
-
-        if withdraw_info.amount > current_wallet_balance.wallet:
+        if withdraw_info.amount > auth_token[1]:
             raise HTTPException(status_code=400, detail="Insufficient funds.")
 
         # Update user's wallet balance
@@ -85,3 +82,19 @@ def withdraw(withdraw_info: Wallet):
             })
 
     return {"message": "Withdrawal successful!"}
+
+@router.get("/balance")
+def get_wallet(wallet_info: WalletInfo):
+    """Retrieve the current wallet balance for a user."""
+
+    with db.engine.begin() as connection:
+        # Authenticate user and token
+        auth_token = connection.execute(
+            sqlalchemy.text("SELECT auth_token, wallet FROM users WHERE username = :username"),
+            {'username': wallet_info.username}
+        ).fetchone()
+
+        if auth_token is None or str(wallet_info.auth_token) != str(auth_token[0]):
+            raise HTTPException(status_code=401, detail="Unauthorized access.")
+
+    return {"wallet_balance": auth_token[1]}
