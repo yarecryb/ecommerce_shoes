@@ -103,7 +103,7 @@ def checkout(data: CheckoutCart):
         with db.engine.begin() as connection:
             user_info = connection.execute(
                 sqlalchemy.text("""
-                    SELECT auth_token, id
+                    SELECT auth_token, id, wallet
                     FROM users WHERE username = :username
                 """),
                 {'username': data.username}
@@ -122,26 +122,42 @@ def checkout(data: CheckoutCart):
                 {'cart_id': data.cart_id}
             ).fetchall()
 
+            total_cost = 0
+
             for item in items:
-                stock = connection.execute(
+                shoe_info = connection.execute(
                     sqlalchemy.text("""
-                        SELECT quantity
+                        SELECT price, quantity
                         FROM catalog
                         WHERE id = :catalog_id
                     """),
                     {'catalog_id': item.catalog_id}
-                ).scalar()
+                ).fetchone()
 
-                if stock < item.total_quantity:
+                if shoe_info.quantity < item.total_quantity:
                     raise HTTPException(status_code=400, detail="Not enough stock for item {}".format(item.catalog_id))
 
-                shoe_info = connection.execute(
+                total_cost += shoe_info.price * item.total_quantity
+
+            if user_info.wallet < total_cost:
+                raise HTTPException(status_code=400, detail="Insufficient balance. Please refill your wallet.")
+
+            for item in items:
+                connection.execute(
                     sqlalchemy.text("""
                         UPDATE catalog SET quantity = quantity - :quantity
                         WHERE id = :id
-                        RETURNING id, user_id, price, quantity
                     """), 
                     {'id': item.catalog_id, 'quantity': item.total_quantity}
+                )
+
+                shoe_info = connection.execute(
+                    sqlalchemy.text("""
+                        SELECT price, user_id
+                        FROM catalog
+                        WHERE id = :catalog_id
+                    """), 
+                    {'catalog_id': item.catalog_id}
                 ).fetchone()
 
                 connection.execute(
@@ -160,18 +176,7 @@ def checkout(data: CheckoutCart):
                     {'id': shoe_info.user_id, 'price': shoe_info.price * item.total_quantity}
                 )
 
-            # Delete all items from the cart
-            '''
             connection.execute(
-                sqlalchemy.text("""
-                    DELETE FROM cart_items
-                    WHERE cart_id = :cart_id
-                """),
-                {'cart_id': data.cart_id}
-            )
-            '''
-
-            cart_update = connection.execute(
                 sqlalchemy.text("""
                     UPDATE carts SET bought = :bought 
                     WHERE cart_id = :cart_id
