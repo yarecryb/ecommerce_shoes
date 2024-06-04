@@ -253,6 +253,57 @@ Fixed
 Fixed
 
 ## Sean Hershey 
+__Code Review Comments (Sean Hershey)__
+1. in cart.py there is a redundant if str(user_info.auth_token) == data.auth_token:
+Fixed
+2. in cart.py 'bought': False value insert is redundant if you let it be false by default and don't supply it
+Fixed
+3. in cart.py your invalid username/auth token handling is different either do return {"message": "Invalid username or auth token!"} or raise HTTPException(status_code=401, detail="Invalid auth")
+Will Implement
+3. in cart.py 'Catalog_id' and 'Cart_id' in parameters should match the case of text for readability
+Will Implement
+4. in cart.py add_item should be renamed to set_item as only one item can exist or changed to add multiple items
+Will Implement
+5. in cart.py add_item should check if bought or otherwise clarify the purpose of the bought boolean logic
+Fixed
+6. in cart.py no auth message fail in checkout
+Will Implement
+7. in users.py check if change username is changing the username into one that already exists
+Already works
+8. in wallet.py no auth verification exists for deposits
+Will Implement
+9. in wallet.py current_wallet_balance has table typo "users users" instead of "users"
+Fixed
+10. in listings.py add error messages or codes for a retrieving listing failure
+Will Implement
+11. inconsistent new lines in SQL statements throughout effect readability
+Will Implement 
+
+__Schema/API Design comments (Sean Hershey)__
+1. responses should be labbelled message and be reflected that way in code
+Fixed
+2. in cases of returning auth_token no additional message is needed
+Fixed
+3. created_at should be a time_stamp not string
+Will Implement
+4. in cart schema bought boolean defaults to null not false
+Removed whole "bought" idea
+5. in users id is not unique
+It is unique
+6. in users username is not unique
+Will Implement
+7. in users email is not unique
+Will Implement
+8. in users auth_token is not unique
+Will Implement
+9. in catalog id is not unique
+Will Implement
+10. in carts id is not unique
+Will Implement
+11. in catalog price should be the same as price in wallet
+Will Implement
+12. in catalog price should be stored when added not referencing catalog
+Will Implement
 
 
 ## Arthur Umerov
