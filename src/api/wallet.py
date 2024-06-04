@@ -97,4 +97,5 @@ def get_wallet(wallet_info: WalletInfo):
         if auth_token is None or str(wallet_info.auth_token) != str(auth_token[0]):
             raise HTTPException(status_code=401, detail="Unauthorized access.")
 
-    return {"wallet_balance": auth_token[1]}
+    wallet_balance_usd = f"${auth_token[1]:,.2f} (USD)"
+    return {"Wallet Balance": wallet_balance_usd}
