@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Body, status
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
@@ -22,7 +22,7 @@ class CartItem(Auth):
 class CheckoutCart(Auth):
     cart_id: int
 
-@router.post("/")
+@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 def create_cart(data: Auth):
     with db.engine.begin() as connection:
         user_info = connection.execute(
@@ -45,11 +45,11 @@ def create_cart(data: Auth):
                 }
             ).fetchone()
 
-            return {"Cart ID": str(cart_result.cart_id)}
+            return {"cart_id": str(cart_result.cart_id)}
         else:
-            return {"message": "Invalid username or auth token!"}
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token!")
 
-@router.post("/{cart_id}/add_item")
+@router.post("/{cart_id}/add_item", response_model=dict, status_code=status.HTTP_200_OK)
 def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
     with db.engine.begin() as connection:
         user_info = connection.execute(
@@ -73,7 +73,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             ).scalar()
 
             if catalog_quantity is None or catalog_quantity < cart_item.quantity:
-                raise HTTPException(status_code=400, detail="Not enough stock for item {}".format(cart_item.catalog_id))
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for item {cart_item.catalog_id}")
 
             cart_item_quantity = connection.execute(
                 sqlalchemy.text("""
@@ -88,7 +88,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             total_quantity = cart_item_quantity + cart_item.quantity
 
             if total_quantity > catalog_quantity:
-                raise HTTPException(status_code=400, detail="Total quantity for item {} exceeds available stock".format(cart_item.catalog_id))
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Total quantity for item {cart_item.catalog_id} exceeds available stock")
 
             connection.execute(sqlalchemy.text("""
                 INSERT INTO cart_items (catalog_id, cart_id, quantity) 
@@ -98,9 +98,9 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
 
             return {"message": "Item added successfully"}
         else:
-            raise HTTPException(status_code=401, detail="Invalid username or auth token")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token")
 
-@router.post("/checkout/")
+@router.put("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
 def checkout(data: CheckoutCart):
     try:
         with db.engine.begin() as connection:
@@ -113,7 +113,7 @@ def checkout(data: CheckoutCart):
             ).fetchone()
             
             if not user_info or str(user_info.auth_token) != data.auth_token:
-                raise HTTPException(status_code=400, detail="Invalid user credentials")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user credentials")
             
             items = connection.execute(
                 sqlalchemy.text("""
@@ -138,12 +138,12 @@ def checkout(data: CheckoutCart):
                 ).fetchone()
 
                 if shoe_info.quantity < item.total_quantity:
-                    raise HTTPException(status_code=400, detail="Not enough stock for item {}".format(item.catalog_id))
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for item {item.catalog_id}")
 
                 total_cost += shoe_info.price * item.total_quantity
 
             if user_info.wallet < total_cost:
-                raise HTTPException(status_code=400, detail="Insufficient balance. Please refill your wallet.")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient balance. Please refill your wallet.")
 
             for item in items:
                 connection.execute(
@@ -183,15 +183,14 @@ def checkout(data: CheckoutCart):
                 sqlalchemy.text("""
                     UPDATE carts SET bought = :bought 
                     WHERE cart_id = :cart_id
-                    RETURNING cart_id, user_id
                 """), 
                 {'bought': True, 'cart_id': data.cart_id}
-            ).fetchone()
+            )
 
             return {"message": "Checkout successful"}
     except sqlalchemy.exc.OperationalError as e:
         logging.error(f"OperationalError: {e}")
-        raise HTTPException(status_code=500, detail="Database connection error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection error")
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
