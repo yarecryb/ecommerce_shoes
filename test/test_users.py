@@ -19,7 +19,7 @@ def cleanup_db():
 def test_create_login_user(cleanup_db):
     response = create_user(example_user)
     assert response.status_code == 200
-    assert response.json() == "User(s) created!"
+    assert response.json()["message"] == "User(s) created!"
 
     response = login_user(example_user_login)
     assert response.status_code == 200
@@ -48,7 +48,7 @@ def test_change_username_password(cleanup_db):
     
     assert update_response.status_code == 200
     update_response_data = update_response.json()
-    assert update_response_data == "Username changed!"
+    assert update_response_data["message"] == "Username changed!"
 
     new_password_info = {
         "username": new_user["username"],
@@ -63,7 +63,7 @@ def test_change_username_password(cleanup_db):
     
     assert update_password_response.status_code == 200
     update_password_response_data = update_password_response.json()
-    assert update_password_response_data == "Password changed!"
+    assert update_password_response_data["message"] == "Password changed!"
 
     new_user_login = {
         "username": new_user["username"],

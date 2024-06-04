@@ -58,22 +58,8 @@ def add_item(data: ItemListing):
                             'price': item.price,
                             'quantity': item.quantity
                         }
-                )
-                catalog_id.append(portfolio_id.fetchone().id)
-                connection.execute(
-                    sqlalchemy.text("""
-                        INSERT INTO catalog_ledger (seller_id, brand, price, quantity, description)
-                        VALUES (:seller_id, :brand, :price, :quantity, :description) 
-                        RETURNING id
-                    """),
-                        {
-                            'seller_id': user_info.id,
-                            'brand': item.brand,
-                            'price': item.price,
-                            'quantity': item.quantity,
-                            'description': "Added Item to the Catalog"
-                        }
-                )
+                ).fetchone()
+                catalog_id.append(portfolio_id.id)
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
         
@@ -95,7 +81,7 @@ def list_items(user: Auth):
         if user_info and str(user_info.auth_token) == user.auth_token:
             items = connection.execute(
                 sqlalchemy.text("""
-                    SELECT *
+                    SELECT id, title, brand, size, price, quantity
                     FROM catalog
                     WHERE user_id = :user_id
                 """),
@@ -134,6 +120,13 @@ def delete_item(data: ItemIDs):
                         WHERE id = :item_id AND user_id = :user_id
                     """),
                     {'item_id': item, 'user_id': user_info.id}
+                )
+                connection.execute(
+                    sqlalchemy.text("""
+                        DELETE FROM cart_items
+                        WHERE catalog_id = :catalog_id
+                    """),
+                    {'catalog_id': item}
                 )
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")

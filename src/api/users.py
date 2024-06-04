@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
@@ -71,7 +71,7 @@ def create_user(new_users: list[User]):
                     'full_name': user.full_name
                 }]
             )
-    return "User(s) created!"
+    return {"message": "User(s) created!"}
 
 @router.post("/login")
 def login_user(credentials: LoginCredentials):
@@ -103,7 +103,7 @@ def login_user(credentials: LoginCredentials):
             )
             return {"message": "Login successful!", "auth_token": new_auth_token}
         else:
-            return {"message": "Invalid username or password."}
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 
 
 @router.post("/update_username")
@@ -130,9 +130,9 @@ def update_username(usernameRequest: UsernameUpdateRequest):
                 'new_username': usernameRequest.new_username, 
                 'current_username': usernameRequest.current_username
             })
-            return "Username changed!"
+            return {"message": "Username changed!"}
         else:
-            return "Invalid username or password."
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 
 @router.post("/update_password")
 def update_password(passwordRequest: PasswordUpdateRequest):
@@ -159,7 +159,7 @@ def update_password(passwordRequest: PasswordUpdateRequest):
                 'new_password': new_hashed_password, 
                 'username': passwordRequest.username
             })
-            return "Password changed!"
+            return {"message": "Password changed!"}
         else:
-            return "Invalid username or password."
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 

@@ -38,7 +38,7 @@ example_item = {
     "title": "Panda Dunks",
     "brand": "Nike",
     "size": 14,
-    "price": "110",
+    "price": 110,
     "quantity": 1
 }
 

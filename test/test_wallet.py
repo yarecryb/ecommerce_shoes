@@ -14,7 +14,7 @@ def cleanup_db():
 def test_wallet_deposit(cleanup_db):
     response = create_user(example_user)
     assert response.status_code == 200
-    assert response.json() == "User(s) created!"
+    assert response.json()["message"] == "User(s) created!"
 
     response = login_user(example_user_login)
     assert response.status_code == 200
