@@ -10,6 +10,15 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+from typing import Optional
+
+class SearchParams(BaseModel):
+    brand: Optional[str] = None
+    title: Optional[str] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+
+
 class Auth(BaseModel):
     username: str
     auth_token: str
@@ -248,4 +257,48 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
                 "top_5": top_5
             }
         else:
-            raise HTTPException(status_code=401, detail="Invalid auth")
+            raise HTTPException(status_code=401, detail="Invalid auth")\
+
+@router.get("/search_items")
+def search_items(params: SearchParams):
+    with db.engine.begin() as connection:
+        query = """
+                SELECT id, title, brand, size, price, quantity
+                FROM catalog
+            """
+        filters = ["quantity > 0"]
+        if params.brand:
+            filters.append("brand ILIKE :brand")
+        if params.title:
+            filters.append("title ILIKE :title")
+        if params.min_price:
+            filters.append("price >= :min_price")
+        if params.max_price:
+            filters.append("price <= :max_price")
+
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+
+        items = connection.execute(
+                sqlalchemy.text(query),
+                {
+                    'brand': f"%{params.brand}%" if params.brand else None,
+                    'title': f"%{params.title}%" if params.title else None,
+                    'min_price': params.min_price,
+                    'max_price': params.max_price
+                }
+            ).fetchall()
+
+        item_list = [
+                ItemDetailWithID(
+                    id=item.id,
+                    title=item.title,
+                    brand=item.brand,
+                    size=item.size,
+                    price=item.price,
+                    quantity=item.quantity
+                )
+                for item in items
+            ]
+
+        return item_list
