@@ -21,8 +21,12 @@ These values for each data point are accurate to how a shoe selling service woul
 ## Performance results of hitting endpoints
 For each endpoint, list how many ms it took to execute. State which three endpoints were the slowest.
 
+  1. End Point 1
+
+  2. End Point 2
+
+  3. Endpoint 3 
+
 ## Performance tuning
 For each of the three slowest endpoints, run explain on the queries and copy the results of running explain into the markdown file. Then describe what the explain means to you and what index you will add to speed up the query. Then copy the command for adding that index into the markdown and rerun explain. Then copy the results of that explain into the markdown and say if it had the performance improvement you expected. Continue this process until the three slowest endpoints are now acceptably fast (think about what this means for your service).
 
-## Prepare for final presentation
-Plan to present for 15 minutes. You will be interrupted during your presentation for questions. Your final presentations MUST be a live demo. No powerpoint or slides are needed. I will ask you to demo certain things in your presentation. Make sure you handle normal edge cases otherwise I will find them live during your presentation.
