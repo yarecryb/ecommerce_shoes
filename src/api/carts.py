@@ -132,87 +132,86 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
 
 @router.post("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
 def checkout(data: CheckoutCart):
-    try:
-        with db.engine.begin() as connection:
-            user_info = connection.execute(
+    with db.engine.begin() as connection:
+        user_info = connection.execute(
+            sqlalchemy.text("""
+                SELECT auth_token, id, wallet
+                FROM users WHERE username = :username
+            """),
+            {'username': data.username}
+        ).fetchone()
+
+        if not user_info or str(user_info.auth_token) != data.auth_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user credentials")
+
+        items = connection.execute(
+            sqlalchemy.text("""
+                SELECT catalog_id, SUM(quantity) as total_quantity
+                FROM cart_items
+                WHERE cart_id = :cart_id
+                GROUP BY catalog_id
+            """),
+            {'cart_id': data.cart_id}
+        ).fetchall()
+
+        total_cost = 0
+
+        for item in items:
+            shoe_info = connection.execute(
                 sqlalchemy.text("""
-                    SELECT auth_token, id, wallet
-                    FROM users WHERE username = :username
+                    SELECT price, SUM(quantity) AS quantity
+                    FROM catalog
+                    JOIN catalog_ledger ON catalog.id = catalog_id
+                    WHERE catalog.id = :catalog_id
+                    GROUP BY price
                 """),
-                {'username': data.username}
+                {'catalog_id': item.catalog_id}
             ).fetchone()
 
-            if not user_info or str(user_info.auth_token) != data.auth_token:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user credentials")
+            if shoe_info.quantity < item.total_quantity:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for item {item.catalog_id}")
 
-            items = connection.execute(
+            total_cost += shoe_info.price * item.total_quantity
+
+        if user_info.wallet < total_cost:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient balance. Please refill your wallet.")
+
+        for item in items:
+            # Update catalog quantities
+            connection.execute(
+                sqlalchemy.text("""                                    
+                    INSERT catalog_ledger (catalog_id, customer_id, quantity)
+                    VALUES (:id, :customer_id, :quantity)
+                """), 
+                {'id': item.catalog_id, 'customer_id': user_info.id, 'quantity': -1 * item.total_quantity}
+            )
+
+            shoe_info = connection.execute(
                 sqlalchemy.text("""
-                    SELECT catalog_id, SUM(quantity) as total_quantity
-                    FROM cart_items
-                    WHERE cart_id = :cart_id
-                    GROUP BY catalog_id
-                """),
-                {'cart_id': data.cart_id}
-            ).fetchall()
+                    SELECT price, user_id
+                    FROM catalog
+                    WHERE id = :catalog_id
+                """), 
+                {'catalog_id': item.catalog_id}
+            ).fetchone()
 
-            total_cost = 0
+            # Deduct from buyer's wallet
+            connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users SET wallet = wallet - :price
+                    WHERE id = :id
+                """), 
+                {'id': user_info.id, 'price': shoe_info.price * item.total_quantity}
+            )
 
-            for item in items:
-                shoe_info = connection.execute(
-                    sqlalchemy.text("""
-                        SELECT price, SUM(quantity) AS quantity
-                        FROM catalog
-                        JOIN catalog_ledger ON catalog.id = catalog_id
-                        WHERE catalog.id = :catalog_id
-                        GROUP BY price
-                    """),
-                    {'catalog_id': item.catalog_id}
-                ).fetchone()
-
-                if shoe_info.quantity < item.total_quantity:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for item {item.catalog_id}")
-
-                total_cost += shoe_info.price * item.total_quantity
-
-            if user_info.wallet < total_cost:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient balance. Please refill your wallet.")
-
-            for item in items:
-                # Update catalog quantities
-                connection.execute(
-                    sqlalchemy.text("""
-                        UPDATE catalog SET quantity = quantity - :quantity
-                        WHERE id = :id
-                    """), 
-                    {'id': item.catalog_id, 'quantity': item.total_quantity}
-                )
-
-                shoe_info = connection.execute(
-                    sqlalchemy.text("""
-                        SELECT price, user_id
-                        FROM catalog
-                        WHERE id = :catalog_id
-                    """), 
-                    {'catalog_id': item.catalog_id}
-                ).fetchone()
-
-                # Deduct from buyer's wallet
-                connection.execute(
-                    sqlalchemy.text("""
-                        UPDATE users SET wallet = wallet - :price
-                        WHERE id = :id
-                    """), 
-                    {'id': user_info.id, 'price': shoe_info.price * item.total_quantity}
-                )
-
-                # Add to seller's wallet
-                connection.execute(
-                    sqlalchemy.text("""
-                        UPDATE users SET wallet = wallet + :price
-                        WHERE id = :id
-                    """), 
-                    {'id': shoe_info.user_id, 'price': shoe_info.price * item.total_quantity}
-                )
+            # Add to seller's wallet
+            connection.execute(
+                sqlalchemy.text("""
+                    UPDATE users SET wallet = wallet + :price
+                    WHERE id = :id
+                """), 
+                {'id': shoe_info.user_id, 'price': shoe_info.price * item.total_quantity}
+            )
 
             # Mark the cart as bought
             connection.execute(
@@ -223,10 +222,10 @@ def checkout(data: CheckoutCart):
                 {'bought': True, 'cart_id': data.cart_id}
             )
 
-            return {"message": "Checkout successful"}
-    except sqlalchemy.exc.OperationalError as e:
-        logging.error(f"OperationalError: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection error")
-    except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
+        return {"message": "Checkout successful"}
+    # except sqlalchemy.exc.OperationalError as e:
+    #     logging.error(f"OperationalError: {e}")
+    #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection error")
+    # except Exception as e:
+    #     logging.error(f"Unexpected error: {e}")
+    #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
