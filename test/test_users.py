@@ -9,11 +9,21 @@ from .info_test import (
 def cleanup_db():
     yield
     with db.engine.begin() as connection:
+        usernames = {'username_original': example_user["username"], 'username_new': new_user["username"]}
+        connection.execute(
+
+            sqlalchemy.text("""
+                DELETE FROM catalog
+                WHERE user_id IN (
+                    SELECT id FROM users WHERE username IN (:username_original, :username_new)
+                )
+            """), usernames
+        )
+        # Now delete the users
         connection.execute(
             sqlalchemy.text("""
                 DELETE FROM users WHERE username IN (:username_original, :username_new)
-            """),
-            {'username_original': example_user["username"], 'username_new': new_user["username"]}
+            """), usernames
         )
 
 def test_create_login_user(cleanup_db):
