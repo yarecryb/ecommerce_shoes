@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, FastAPI
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 from src.api import auth
 import sqlalchemy
 from src import database as db
-app = FastAPI()
 
 router = APIRouter(
     prefix="/wallet",
@@ -84,9 +83,10 @@ def withdraw(withdraw_info: Wallet):
 
     return {"message": "Withdrawal successful!"}
 
-@app.get("/balance")
+@router.get("/balance")
 def get_wallet(wallet_info: WalletInfo):
     """Retrieve the current wallet balance for a user."""
+
     with db.engine.begin() as connection:
         # Authenticate user and token
         auth_token = connection.execute(
