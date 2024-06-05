@@ -280,44 +280,45 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
 def search_items(params: SearchParams):
     with db.engine.begin() as connection:
         query = """
-                SELECT id, title, brand, size, price, SUM(quantity) AS quantity
-                FROM catalog
-                JOIN catalog_ledger ON id = catalog_id
-                GROUP BY id, title, brand, size, price
-            """
-        filters = ["quantity > 0"]
+            SELECT catalog.id, title, brand, size, price, SUM(catalog_ledger.quantity) AS quantity
+            FROM catalog
+            JOIN catalog_ledger ON catalog.id = catalog_ledger.catalog_id
+        """
+        filters = []
         if params.brand:
             filters.append("brand ILIKE :brand")
         if params.title:
             filters.append("title ILIKE :title")
-        if params.min_price:
+        if params.min_price is not None:
             filters.append("price >= :min_price")
-        if params.max_price:
+        if params.max_price is not None:
             filters.append("price <= :max_price")
 
         if filters:
             query += " WHERE " + " AND ".join(filters)
 
+        query += " GROUP BY catalog.id, title, brand, size, price HAVING SUM(catalog_ledger.quantity) > 0"
+
         items = connection.execute(
-                sqlalchemy.text(query),
-                {
-                    'brand': f"%{params.brand}%" if params.brand else None,
-                    'title': f"%{params.title}%" if params.title else None,
-                    'min_price': params.min_price,
-                    'max_price': params.max_price
-                }
-            ).fetchall()
+            sqlalchemy.text(query),
+            {
+                'brand': f"%{params.brand}%" if params.brand else None,
+                'title': f"%{params.title}%" if params.title else None,
+                'min_price': params.min_price,
+                'max_price': params.max_price
+            }
+        ).fetchall()
 
         item_list = [
-                ItemDetailWithID(
-                    id=item.id,
-                    title=item.title,
-                    brand=item.brand,
-                    size=item.size,
-                    price=item.price,
-                    quantity=item.quantity
-                )
-                for item in items
-            ]
+            ItemDetailWithID(
+                id=item.id,
+                title=item.title,
+                brand=item.brand,
+                size=item.size,
+                price=item.price,
+                quantity=item.quantity
+            )
+            for item in items
+        ]
 
         return item_list
