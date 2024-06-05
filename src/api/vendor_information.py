@@ -10,7 +10,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-
 class Auth(BaseModel):
     username: str
     auth_token: str
@@ -70,7 +69,7 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
                     (SELECT AVG(total_amount) FROM customer_totals) as avg_spent_per_customer,
                     (SELECT COUNT(DISTINCT brand) FROM catalog WHERE user_id = :user_id) as brands_sold,
                     (SELECT COUNT(*) FROM recurring_customers) as recurring_customers,
-                    (SELECT SUM(price * quantity) FROM catalog WHERE user_id = :user_id) as total_money_spent
+                    (SELECT SUM(cart_items.quantity * catalog.price) FROM cart_items JOIN catalog ON cart_items.catalog_id = catalog.id JOIN carts ON cart_items.cart_id = carts.cart_id WHERE catalog.user_id = :user_id AND carts.bought = TRUE) as total_money_spent
             """
 
             metrics = connection.execute(
@@ -91,9 +90,12 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
                 SELECT 
                     users.full_name,
                     users.username,
-                    SUM(price * quantity) as total_money_sold
+                    SUM(cart_items.quantity * catalog.price) as total_money_sold
                 FROM catalog
                 JOIN users ON catalog.user_id = users.id
+                JOIN cart_items ON catalog.id = cart_items.catalog_id
+                JOIN carts ON cart_items.cart_id = carts.cart_id
+                WHERE carts.bought = TRUE
                 GROUP BY users.id
                 ORDER BY total_money_sold DESC
             """
@@ -128,3 +130,4 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
             }
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
+

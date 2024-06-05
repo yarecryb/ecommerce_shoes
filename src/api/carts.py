@@ -71,7 +71,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
                     FROM catalog
                     JOIN catalog_ledger ON catalog.id = catalog_id
                     WHERE catalog.id = :catalog_id
-                    GROUP BY price
+                    GROUP BY catalog.id, price
                 """),
                 {'catalog_id': cart_item.catalog_id}
             ).fetchone()
@@ -126,9 +126,6 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             return {"message": "Item added successfully"}
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token")
-
-
-
 
 @router.post("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
 def checkout(data: CheckoutCart):
