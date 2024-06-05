@@ -29,23 +29,23 @@ class SortBy(str, Enum):
     RECURRING_CUSTOMERS = "recurring_customers"
     TOTAL_MONEY_SPENT = "total_money_spent"
 
-class VendorLeaderboardRequest(Auth):
-    sort_by: SortBy
-
 class VendorRanking(BaseModel):
     full_name: str
     username: str
     total_money_sold: float
     rank: int
 
-@router.get("/")
+@router.post("/")
 def vendor_leaderboard(
     data: Auth,
     sort_by: SortBy = Query(SortBy.TOTAL_CUSTOMERS, description="Sort by")
 ):
-    valid_sort_fields = ["total_customers", "avg_spent_per_customer", "brands_sold", "recurring_customers", "total_money_spent"]
+    valid_sort_fields = [
+        "total_customers", "avg_spent_per_customer",
+        "brands_sold", "recurring_customers", "total_money_spent"
+    ]
     
-    if data.sort_by not in valid_sort_fields:
+    if sort_by not in valid_sort_fields:
         raise HTTPException(status_code=400, detail="Invalid sort_by value")
 
     with db.engine.begin() as connection:
@@ -135,10 +135,9 @@ def vendor_leaderboard(
                     )
 
             return {
-                data.sort_by: metrics_dict[data.sort_by],
+                sort_by.value: metrics_dict[sort_by.value],
                 "user_rank": user_rank,
                 "top_5": top_5
             }
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
-
