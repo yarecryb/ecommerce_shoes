@@ -49,6 +49,48 @@ def create_cart(data: Auth):
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token!")
 
+@router.post("/{cart_id}/view_cart", response_model=dict, status_code=status.HTTP_200_OK)
+def view_cart(cart_id: int, data: Auth):
+    with db.engine.begin() as connection:
+        # Verify user credentials and cart ownership
+        user_cart_info = connection.execute(
+            sqlalchemy.text("""
+                SELECT users.auth_token, carts.cart_id
+                FROM users
+                JOIN carts ON users.id = carts.user_id
+                WHERE users.username = :username AND carts.cart_id = :cart_id
+            """),
+            {'username': data.username, 'cart_id': cart_id}
+        ).fetchone()
+
+        if not user_cart_info or str(user_cart_info.auth_token) != data.auth_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token")
+
+        # Fetch cart items
+        cart_items = connection.execute(
+            sqlalchemy.text("""
+                SELECT catalog.brand, catalog.title, catalog.size, cart_items.quantity
+                FROM cart_items
+                JOIN catalog ON cart_items.catalog_id = catalog.id
+                WHERE cart_items.cart_id = :cart_id
+            """),
+            {'cart_id': cart_id}
+        ).fetchall()
+
+        if not cart_items:
+            return {"message": "Cart is empty"}
+
+        # Construct the response
+        items = [{
+            "brand": item.brand,
+            "title": item.title,
+            "size": item.size,
+            "quantity": item.quantity
+        } for item in cart_items]
+
+        return {"items": items}
+        
+
 @router.post("/{cart_id}/add_item", response_model=dict, status_code=status.HTTP_200_OK)
 def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
     if cart_item.quantity < 1:
@@ -57,14 +99,16 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
-                SELECT auth_token, id, wallet
-                FROM users WHERE username = :username
+                SELECT auth_token, users.id, wallet, cart_id
+                FROM users 
+                JOIN carts ON users.id = carts.user_id
+                WHERE username = :username
                 FOR UPDATE
             """),
             {'username': cart_item.username}
         ).fetchone()
 
-        if user_info and str(user_info.auth_token) == cart_item.auth_token:
+        if user_info and str(user_info.auth_token) == cart_item.auth_token and cart_id == user_info.cart_id:
             catalog_item = connection.execute(
                 sqlalchemy.text("""
                 SELECT price, SUM(quantity) AS quantity
