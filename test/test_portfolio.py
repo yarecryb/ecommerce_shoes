@@ -12,15 +12,23 @@ def cleanup_db():
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text("""
+                DELETE FROM catalog_ledger WHERE catalog_id IN (
+                    SELECT catalog.id 
+                    FROM catalog 
+                    JOIN users ON user_id = users.id
+                    WHERE username = :username_original
+                );
                 DELETE FROM catalog WHERE user_id IN (
                     SELECT id FROM users WHERE username = :username_original
                 );
+                
                 DELETE FROM users WHERE username = :username_original;
             """),
             {
                 'username_original': example_user["username"]
             }
         )
+
 
 # def test_add_one_item(cleanup_db):
 #     create_user(example_user)

@@ -89,23 +89,25 @@ def add_item(data: ItemListing):
         "List of Catalog Id's:": catalog_id
     }
 
-@router.get("/list_items")
-def list_items(username: str, auth_token: str):
+@router.post("/list_items")
+def list_items(auth: Auth):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
                 SELECT auth_token, id
                 FROM users WHERE username = :username
             """),
-            {'username': username}
+            {'username': auth.username}
         ).fetchone()
 
-        if user_info and str(user_info.auth_token) == auth_token:
+        if user_info and str(user_info.auth_token) == auth.auth_token:
             items = connection.execute(
                 sqlalchemy.text("""
-                    SELECT id, title, brand, size, price
+                    SELECT catalog.id, title, brand, size, price, SUM(quantity) AS quantity
                     FROM catalog
+                    JOIN catalog_ledger ON catalog.id = catalog_id
                     WHERE user_id = :user_id
+                    GROUP BY catalog.id, title, brand, size, price
                 """),
                 {'user_id': user_info.id}
             ).fetchall()
@@ -115,7 +117,8 @@ def list_items(username: str, auth_token: str):
                     title=item.title,
                     brand=item.brand,
                     size=item.size,
-                    price=item.price
+                    price=item.price,
+                    quantity=item.quantity
                 )
                 for item in items
             ]
