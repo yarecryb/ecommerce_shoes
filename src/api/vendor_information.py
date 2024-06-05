@@ -31,7 +31,7 @@ class VendorRanking(BaseModel):
     total_money_sold: float
     rank: int
 
-@router.post("/vendor")
+@router.post("/")
 def vendor_leaderboard(data: VendorLeaderboardRequest):
     valid_sort_fields = ["total_customers", "avg_spent_per_customer", "brands_sold", "recurring_customers", "total_money_spent"]
     
