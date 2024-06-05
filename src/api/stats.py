@@ -24,7 +24,7 @@ def top_ten(
             WITH FilteredSales AS (
                 SELECT 
                     c.brand,
-                    SUM(ledger.quantity) * -1 AS shoes_sold
+                    SUM(ledger.quantity) AS shoes_sold
                 FROM catalog_ledger AS ledger
                 JOIN catalog AS c ON ledger.catalog_id = c.id
                 WHERE 1=1

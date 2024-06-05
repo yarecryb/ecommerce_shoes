@@ -276,7 +276,7 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
 
-@router.get("/search_items")
+@router.post("/search_items")
 def search_items(params: SearchParams):
     with db.engine.begin() as connection:
         query = """
