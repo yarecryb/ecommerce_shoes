@@ -83,7 +83,7 @@ def withdraw(withdraw_info: Wallet):
 
     return {"message": "Withdrawal successful!"}
 
-@router.get("/balance")
+@router.post("/balance")
 def get_wallet(wallet_info: WalletInfo):
     """Retrieve the current wallet balance for a user."""
 

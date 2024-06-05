@@ -98,11 +98,11 @@ with engine.begin() as conn:
     """))
 
 # Number of users to generate
-num_users = 100000
-num_catalogs = 100000
-num_ledger_entries = 500000
-num_carts = 100000
-num_cart_items = 1000000
+num_users = 1000
+num_catalogs = 1000
+num_ledger_entries = 5000
+num_carts = 1000
+num_cart_items = 1000
 
 # Create fake data with unique usernames and emails
 usernames = set()

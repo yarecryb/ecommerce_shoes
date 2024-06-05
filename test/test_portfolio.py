@@ -30,19 +30,19 @@ def cleanup_db():
         )
 
 
-# def test_add_one_item(cleanup_db):
-#     create_user(example_user)
-#     response = login_user(example_user_login)
-#     auth_token = response.json()["auth_token"]
-#     auth = {
-#         "username": example_user["username"],
-#         "auth_token": auth_token,
-#     }
-#     item_info = {
-#         "username": example_user["username"],
-#         "auth_token": auth_token,
-#         "items": [example_item]
-#     }
+def test_add_one_item(cleanup_db):
+    create_user(example_user)
+    response = login_user(example_user_login)
+    auth_token = response.json()["auth_token"]
+    auth = {
+        "username": example_user["username"],
+        "auth_token": auth_token,
+    }
+    item_info = {
+        "username": example_user["username"],
+        "auth_token": auth_token,
+        "items": [example_item]
+    }
     
     item_response = add_item(item_info)
     assert item_response.status_code == 200
