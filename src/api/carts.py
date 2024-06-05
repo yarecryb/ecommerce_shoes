@@ -72,7 +72,7 @@ def view_cart(cart_id: int, data: Auth):
                 SELECT catalog.brand, catalog.title, catalog.size, catalog.price, cart_items.quantity
                 FROM cart_items
                 JOIN catalog ON cart_items.catalog_id = catalog.id
-                WHERE cart_items.cart_id = :cart_id
+                WHERE cart_items.cart_id = :cart_id AND cart_items.quantity > 0
             """),
             {'cart_id': cart_id}
         ).fetchall()
@@ -100,7 +100,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
     with db.engine.begin() as connection:
         user_info = connection.execute(
             sqlalchemy.text("""
-                SELECT auth_token, users.id, wallet, cart_id
+                SELECT auth_token, users.id, wallet
                 FROM users 
                 JOIN carts ON users.id = carts.user_id
                 WHERE username = :username
@@ -108,8 +108,22 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             """),
             {'username': cart_item.username}
         ).fetchone()
-
-        if user_info and str(user_info.auth_token) == cart_item.auth_token and cart_id == user_info.cart_id:
+        carts = connection.execute(
+            sqlalchemy.text("""
+                SELECT cart_id
+                FROM users
+                JOIN carts ON users.id = carts.user_id
+                WHERE username = :username
+            """),
+            {'username': cart_item.username}
+        ).fetchall()
+        cart_auth = False
+        for cart in carts:
+            if cart_id == cart.cart_id:
+                cart_auth = True
+                
+        # and cart_id == user_info.cart_id
+        if user_info and str(user_info.auth_token) == cart_item.auth_token and cart_auth:
             catalog_item = connection.execute(
                 sqlalchemy.text("""
                 SELECT price, SUM(quantity) AS quantity
