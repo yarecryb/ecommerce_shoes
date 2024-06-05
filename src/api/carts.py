@@ -163,7 +163,7 @@ def checkout(data: CheckoutCart):
                     FROM catalog
                     JOIN catalog_ledger ON catalog.id = catalog_id
                     WHERE catalog.id = :catalog_id
-                    GROUP BY price
+                    GROUP BY price, catalog_id
                 """),
                 {'catalog_id': item.catalog_id}
             ).fetchone()
