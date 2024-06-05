@@ -89,7 +89,7 @@ def add_item(data: ItemListing):
         "List of Catalog Id's:": catalog_id
     }
 
-@router.get("/list_items")
+@router.post("/list_items")
 def list_items(username: str, auth_token: str):
     with db.engine.begin() as connection:
         user_info = connection.execute(
