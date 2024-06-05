@@ -126,7 +126,7 @@ def list_items(auth: Auth):
             return item_list
     raise HTTPException(status_code=401, detail="Invalid auth")
 
-@router.delete("/delete_item")
+@router.post("/delete_item")
 def delete_item(data: ItemIDs):
     with db.engine.begin() as connection:
         user_info = connection.execute(
@@ -140,8 +140,13 @@ def delete_item(data: ItemIDs):
             for item in data.items:
                 connection.execute(
                     sqlalchemy.text("""
+                        DELETE FROM catalog_ledger WHERE catalog_id IN (
+                            SELECT catalog.id 
+                            FROM catalog 
+                            WHERE user_id = :user_id
+                        );       
                         DELETE FROM catalog 
-                        WHERE id = :item_id AND user_id = :user_id
+                        WHERE id = :item_id AND user_id = :user_id        
                     """),
                     {'item_id': item, 'user_id': user_info.id}
                 )
@@ -269,7 +274,7 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
                 "top_5": top_5
             }
         else:
-            raise HTTPException(status_code=401, detail="Invalid auth")\
+            raise HTTPException(status_code=401, detail="Invalid auth")
 
 @router.get("/search_items")
 def search_items(params: SearchParams):

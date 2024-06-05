@@ -48,21 +48,21 @@ multiple_example_items = [
         "title": "Superstar something",
         "brand": "Adidas",
         "size": 600,
-        "price": "50",
+        "price": 50.0,
         "quantity": 20000
     },
     {
         "title": "Another type of shoe",
         "brand": "something",
         "size": 6,
-        "price": "30",
+        "price": 30.0,
         "quantity": 5
     },
     {
         "title": "More types of shoes",
         "brand": "something",
         "size": 6,
-        "price": "30",
+        "price": 30.0,
         "quantity": 5
     }
 ]
