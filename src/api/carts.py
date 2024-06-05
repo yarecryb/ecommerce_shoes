@@ -67,9 +67,11 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
         if user_info and str(user_info.auth_token) == cart_item.auth_token:
             catalog_item = connection.execute(
                 sqlalchemy.text("""
-                    SELECT quantity, price
+                    SELECT price, SUM(quantity) AS quantity
                     FROM catalog
+                    JOIN catalog_ledger ON id = catalog_id
                     WHERE id = :catalog_id
+                    GROUP BY price
                     FOR UPDATE
                 """),
                 {'catalog_id': cart_item.catalog_id}
@@ -159,9 +161,11 @@ def checkout(data: CheckoutCart):
             for item in items:
                 shoe_info = connection.execute(
                     sqlalchemy.text("""
-                        SELECT price, quantity
+                        SELECT price, SUM(quantity) AS quantity
                         FROM catalog
+                        JOIN catalog_ledger ON id = catalog_id
                         WHERE id = :catalog_id
+                        GROUP BY price
                         FOR UPDATE
                     """),
                     {'catalog_id': item.catalog_id}

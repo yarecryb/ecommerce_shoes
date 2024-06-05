@@ -14,10 +14,12 @@ def get_catalog(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1)):
             with db.engine.connect() as connection:  # Establish a connection to the database
                 # Define the specific column order in the SELECT statement
                 query = sqlalchemy.text("""
-                    SELECT catalog.id, user_info.username, title, brand, size, price, catalog.created_at
+                    SELECT catalog.id, user_info.username, title, brand, size, price, catalog.created_at, SUM(quantity) AS quantity
                     FROM catalog
+                    JOIN catalog_ledger ON catalog.id = catalog_id
                     JOIN users AS user_info ON catalog.user_id = user_info.id
-                    WHERE catalog.quantity > 0
+                    WHERE quantity > 0
+                    GROUP BY catalog.id, user_info.username, title, brand, size, price, catalog.created_at
                     ORDER BY catalog.id ASC
                     OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
                 """)

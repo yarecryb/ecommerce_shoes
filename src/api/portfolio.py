@@ -56,8 +56,8 @@ def add_item(data: ItemListing):
                 if item.quantity > 0:
                     portfolio_id = connection.execute(
                         sqlalchemy.text("""
-                            INSERT INTO catalog (user_id, title, brand, size, price, quantity)
-                            VALUES (:user_id, :title, :brand, :size, :price, :quantity) 
+                            INSERT INTO catalog (user_id, title, brand, size, price)
+                            VALUES (:user_id, :title, :brand, :size, :price) 
                             RETURNING id
                         """),
                             {
@@ -66,9 +66,19 @@ def add_item(data: ItemListing):
                                 'brand': item.brand,
                                 'size': item.size,
                                 'price': item.price,
-                                'quantity': item.quantity
                             }
                     ).fetchone()
+
+                    connection.execute(
+                        sqlalchemy.text("""
+                            INSERT INTO catalog_ledger (catalog_id, quantity)
+                            VALUES (:catalog_id, :quantity)
+                        """),
+                            {
+                                'catalog_id': portfolio_id.id,
+                                'quantity': item.quantity
+                            }
+                    )
                     catalog_id.append(portfolio_id.id)
                 else:
                     raise HTTPException(status_code=401, detail="Invalid item amount")
@@ -93,7 +103,7 @@ def list_items(username: str, auth_token: str):
         if user_info and str(user_info.auth_token) == auth_token:
             items = connection.execute(
                 sqlalchemy.text("""
-                    SELECT id, title, brand, size, price, quantity
+                    SELECT id, title, brand, size, price
                     FROM catalog
                     WHERE user_id = :user_id
                 """),
@@ -105,8 +115,7 @@ def list_items(username: str, auth_token: str):
                     title=item.title,
                     brand=item.brand,
                     size=item.size,
-                    price=item.price,
-                    quantity=item.quantity
+                    price=item.price
                 )
                 for item in items
             ]
@@ -263,8 +272,10 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
 def search_items(params: SearchParams):
     with db.engine.begin() as connection:
         query = """
-                SELECT id, title, brand, size, price, quantity
+                SELECT id, title, brand, size, price, SUM(quantity) AS quantity
                 FROM catalog
+                JOIN catalog_ledger ON id = catalog_id
+                GROUP BY id, title, brand, size, price
             """
         filters = ["quantity > 0"]
         if params.brand:
