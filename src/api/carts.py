@@ -69,8 +69,8 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
                 sqlalchemy.text("""
                     SELECT price, SUM(quantity) AS quantity
                     FROM catalog
-                    JOIN catalog_ledger ON id = catalog_id
-                    WHERE id = :catalog_id
+                    JOIN catalog_ledger ON catalog.id = catalog_id
+                    WHERE catalog.id = :catalog_id
                     GROUP BY price
                     FOR UPDATE
                 """),
@@ -131,7 +131,7 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
 
 
 
-@router.put("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
+@router.post("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
 def checkout(data: CheckoutCart):
     try:
         with db.engine.begin() as connection:
@@ -163,10 +163,9 @@ def checkout(data: CheckoutCart):
                     sqlalchemy.text("""
                         SELECT price, SUM(quantity) AS quantity
                         FROM catalog
-                        JOIN catalog_ledger ON id = catalog_id
-                        WHERE id = :catalog_id
+                        JOIN catalog_ledger ON catalog.id = catalog_id
+                        WHERE catalog.id = :catalog_id
                         GROUP BY price
-                        FOR UPDATE
                     """),
                     {'catalog_id': item.catalog_id}
                 ).fetchone()
