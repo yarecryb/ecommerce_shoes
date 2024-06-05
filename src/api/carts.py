@@ -67,12 +67,11 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
         if user_info and str(user_info.auth_token) == cart_item.auth_token:
             catalog_item = connection.execute(
                 sqlalchemy.text("""
-                    SELECT price, SUM(quantity) AS quantity
+                SELECT price, SUM(quantity) AS quantity
                     FROM catalog
-                    JOIN catalog_ledger ON id = catalog_id
-                    WHERE id = :catalog_id
+                    JOIN catalog_ledger ON catalog.id = catalog_id
+                    WHERE catalog.id = :catalog_id
                     GROUP BY price
-                    FOR UPDATE
                 """),
                 {'catalog_id': cart_item.catalog_id}
             ).fetchone()
@@ -127,8 +126,6 @@ def set_cart_item(cart_id: int, cart_item: CartItem = Body(...)):
             return {"message": "Item added successfully"}
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or auth token")
-
-
 
 
 @router.put("/checkout/", response_model=dict, status_code=status.HTTP_200_OK)
