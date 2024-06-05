@@ -7,6 +7,9 @@ from .info_test import (
     multiple_example_items, create_user, login_user, add_item, 
     list_items, delete_items
 )
+def test_read_listings():
+    response = client.get("/listings/")
+    assert response.status_code == 200
 
 @pytest.fixture
 def cleanup_db():
