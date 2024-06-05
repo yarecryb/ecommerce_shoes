@@ -30,3 +30,16 @@ For each endpoint, list how many ms it took to execute. State which three endpoi
 ## Performance tuning
 For each of the three slowest endpoints, run explain on the queries and copy the results of running explain into the markdown file. Then describe what the explain means to you and what index you will add to speed up the query. Then copy the command for adding that index into the markdown and rerun explain. Then copy the results of that explain into the markdown and say if it had the performance improvement you expected. Continue this process until the three slowest endpoints are now acceptably fast (think about what this means for your service).
 
+listings.py 
+* /listings
+Planning Time: 0.505 ms
+Execution Time: 12.384 ms
+
+carts.py
+* /
+Planning Time: 0.235 ms
+Execution Time: 0.100 ms
++ 
+Execution Time: 0.729 ms
+
+*/{cart_id}/add_item
