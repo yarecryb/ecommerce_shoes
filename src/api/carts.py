@@ -69,7 +69,7 @@ def view_cart(cart_id: int, data: Auth):
         # Fetch cart items
         cart_items = connection.execute(
             sqlalchemy.text("""
-                SELECT catalog.brand, catalog.title, catalog.size, cart_items.quantity
+                SELECT catalog.brand, catalog.title, catalog.size, catalog.price, cart_items.quantity
                 FROM cart_items
                 JOIN catalog ON cart_items.catalog_id = catalog.id
                 WHERE cart_items.cart_id = :cart_id
@@ -85,6 +85,7 @@ def view_cart(cart_id: int, data: Auth):
             "brand": item.brand,
             "title": item.title,
             "size": item.size,
+            "price": item.price * item.quantity,
             "quantity": item.quantity
         } for item in cart_items]
 
