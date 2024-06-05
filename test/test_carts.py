@@ -1,9 +1,5 @@
 from .info_test import client  # Import only the 'client' name from info_test
 
-def test_read_listings():
-    response = client.get("/listings/")
-    assert response.status_code == 200
-
 import pytest
 import sqlalchemy
 from .info_test import (
@@ -35,6 +31,9 @@ def cleanup_db():
             }
         )
 
+def test_read_listings():
+    response = client.get("/listings/")
+    assert response.status_code == 200
 
 def test_add_one_item(cleanup_db):
     create_user(example_user)
@@ -66,6 +65,8 @@ def test_add_one_item(cleanup_db):
     assert len(user_items_data) > 0 
 
     assert example_item_with_id == user_items_data[0]
+
+    
 
 # Test adding multiple items
 def test_add_multiple_items(cleanup_db):
