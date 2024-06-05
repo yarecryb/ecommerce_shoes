@@ -177,7 +177,7 @@ def checkout(data: CheckoutCart):
             # Update catalog quantities
             connection.execute(
                 sqlalchemy.text("""                                    
-                    INSERT catalog_ledger (catalog_id, customer_id, quantity)
+                    INSERT INTO catalog_ledger (catalog_id, customer_id, quantity)
                     VALUES (:id, :customer_id, :quantity)
                 """), 
                 {'id': item.catalog_id, 'customer_id': user_info.id, 'quantity': -1 * item.total_quantity}
@@ -220,9 +220,3 @@ def checkout(data: CheckoutCart):
             )
 
         return {"message": "Checkout successful"}
-    # except sqlalchemy.exc.OperationalError as e:
-    #     logging.error(f"OperationalError: {e}")
-    #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database connection error")
-    # except Exception as e:
-    #     logging.error(f"Unexpected error: {e}")
-    #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
