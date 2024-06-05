@@ -368,4 +368,55 @@ Fixed
 12. Add a Boolean 'private' field to allow sellers to hide an item from the catalog instead of deleting it
 
 
-## Liam Hyde
+**Code Review Comments (Liam Hyde)**
+1. on line 93 of creating a cart, why do you compare the provided and expected auth token twice?
+fixed.
+2. I think a lot of the string casting is unnecessary
+fixed.
+3. In checkout can you only buy one item at a time? that seems weird, given there is no restriction on adding multiple items to carts
+fixed.
+4. listings does not function as defined in the spec, there are parameters where there shouldn't be
+listings can vary as each listing will vary based on seller.
+5. Encrypt all private user data (passwords, emails, wallets) etc in the database instead of storing the raw data
+Encrypted passwords, usernames etc. we found not needed.
+6. you should probably use a library to handle wallets
+We found this was not neccesary.
+7. removing items from a portfolio should remove them from all carts
+Fixed. 
+8. when handling checkouts, make sure customer balance does not go below 0
+Fixed.
+9. handling is inconsistent when requests/posts fail, should either all raise errors or all return error json
+Errors are raised as HTTP exceptions now.
+10. I don't think you can do normal subtraction with money values
+Fixed.
+12. you can run into race conditions with how you implement auth_token, consider adding an isolation level change
+fixed
+13. you can run into these same race conditions with how you handle wallets
+fixed
+
+**Schema/API Design comments (Liam Hyde)**
+1. in users username should be unique
+Fixed
+2. in users email should be unique
+Fixed.
+3. in users auth_token should be unique (idk if random guarantees this)
+They are unique.
+4. fullname, username, email, and password should not be nullable
+Fixed.
+5. authentication info like passwords and personal info should probably be in different tables
+We found that it was fine for now, but could be done later on. 
+6. catalog can be split into catalog and items tables with catalog pointing to data on specific items
+We found that it was fine for now, but could be done later on. 
+7. in new items table title, brand, price, etc per item should not be nullable
+As sellers can post sellings with limited information this should be fine.
+8. carts and cart items should be two separate tables
+we found this was unnecessary. 
+9. wallet should also be a separate table from users
+10. id should be unique in all tables
+All IDS are unique.
+11. when returning messages from the api make sure its json formatted as a field of "message": ""
+Fixed for most.
+12. auth_token should expire after a certain amount of time and require a new login
+auth token resets after everytime.
+
+
