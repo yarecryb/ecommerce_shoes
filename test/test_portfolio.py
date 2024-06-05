@@ -44,7 +44,7 @@ def test_add_one_item(cleanup_db):
     example_item_with_id = example_item.copy()
     example_item_with_id["id"] = added_item_id
 
-    user_items = list_items(auth)
+    user_items = list_items( auth)
     assert user_items.status_code == 200
 
     user_items_data = user_items.json()

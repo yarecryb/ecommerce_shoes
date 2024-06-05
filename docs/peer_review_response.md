@@ -360,7 +360,7 @@ Fixed
 8. Set default values for Boolean fields
 Fixed
 9. Implement soft deletes for items (add a Boolean 'deleted' field to the items table)
-
+Fixed
 10. Split the catalog into a brands table and a brand_items table
 
 11. Split the cart table into a cart and cart_items table
