@@ -274,7 +274,7 @@ def vendor_leaderboard(data: VendorLeaderboardRequest):
                 "top_5": top_5
             }
         else:
-            raise HTTPException(status_code=401, detail="Invalid auth")\
+            raise HTTPException(status_code=401, detail="Invalid auth")
 
 @router.get("/search_items")
 def search_items(params: SearchParams):
