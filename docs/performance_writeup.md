@@ -3,6 +3,11 @@ Should contain a link to the python file you used to construct the million rows 
 
 https://github.com/yarecryb/ecommerce_shoes/blob/main/generate_fake_data.py
 env.:
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_SERVER=127.0.0.1
+POSTGRES_PORT=54322
+POSTGRES_DB=postgres
 
 
 There are 100,000 rows in the User Table for each unique user.
