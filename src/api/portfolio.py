@@ -140,22 +140,17 @@ def delete_item(data: ItemIDs):
             for item in data.items:
                 connection.execute(
                     sqlalchemy.text("""
-                        DELETE FROM catalog_ledger WHERE catalog_id IN (
-                            SELECT catalog.id 
-                            FROM catalog 
-                            WHERE user_id = :user_id
-                        );       
-                        DELETE FROM catalog 
-                        WHERE id = :item_id AND user_id = :user_id        
+                        INSERT INTO catalog_ledger (catalog_id, customer_id, quantity)
+                        VALUES (:item_id, :user_id, (
+                            SELECT -1 * COALESCE(SUM(quantity), 0)
+                            FROM catalog_ledger
+                            WHERE catalog_id = :item_id
+                            GROUP BY catalog_id
+                        ));
+                        UPDATE cart_items SET quantity = 0
+                        WHERE catalog_id = :item_id;
                     """),
                     {'item_id': item, 'user_id': user_info.id}
-                )
-                connection.execute(
-                    sqlalchemy.text("""
-                        DELETE FROM cart_items
-                        WHERE catalog_id = :catalog_id
-                    """),
-                    {'catalog_id': item}
                 )
         else:
             raise HTTPException(status_code=401, detail="Invalid auth")
