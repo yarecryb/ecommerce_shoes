@@ -26,7 +26,7 @@ These values for each data point are accurate to how a shoe selling service woul
 
 For each endpoint, list how many ms it took to execute. State which three endpoints were the slowest.
 
-1. '/istings'
+1. '/listings'
 
 2. '/{cart_id}/view_cart'
 
